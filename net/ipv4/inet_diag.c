@@ -471,6 +471,7 @@ out:
 	if (sk)
 		sock_gen_put(sk);
 
+out_nosk:
 	return err;
 }
 EXPORT_SYMBOL_GPL(inet_diag_dump_one_icsk);
