@@ -1935,6 +1935,7 @@ err_arch_supported:
 	return ret;
 }
 
+<<<<<<< HEAD
 static int etm_remove(struct amba_device *adev)
 {
 	struct etm_drvdata *drvdata = amba_get_drvdata(adev);
@@ -1946,6 +1947,8 @@ static int etm_remove(struct amba_device *adev)
 	return 0;
 }
 
+=======
+>>>>>>> coresight: removing bind/unbind options from sysfs
 #ifdef CONFIG_PM
 static int etm_runtime_suspend(struct device *dev)
 {
@@ -2006,9 +2009,9 @@ static struct amba_driver etm_driver = {
 		.name	= "coresight-etm3x",
 		.owner	= THIS_MODULE,
 		.pm	= &etm_dev_pm_ops,
+		.suppress_bind_attrs = true,
 	},
 	.probe		= etm_probe,
-	.remove		= etm_remove,
 	.id_table	= etm_ids,
 };
 
