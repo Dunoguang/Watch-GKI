@@ -3159,6 +3159,11 @@ int dwc3_gadget_suspend(struct dwc3 *dwc)
 	if (!dwc->gadget_driver)
 		return 0;
 
+	if (dwc->pullups_connected) {
+		dwc3_gadget_disable_irq(dwc);
+		dwc3_gadget_run_stop(dwc, true, true);
+	}
+
 	dwc3_gadget_run_stop(dwc, false, false);
 
 	dwc3_disconnect_gadget(dwc);
@@ -3174,12 +3179,13 @@ int dwc3_gadget_resume(struct dwc3 *dwc)
 
 	if (!dwc->gadget_driver)
 		return 0;
+<<<<<<< HEAD
+=======
 
-	ret = __dwc3_gadget_start(dwc);
-	if (ret < 0)
-		goto err0;
-
-	ret = dwc3_gadget_run_stop(dwc, true, false);
+	/* Start with SuperSpeed Default */
+	dwc3_gadget_ep0_desc.wMaxP
+	/* Start with SuperSpeed Default */
+	dwc3_gadget_ep0_desc.wMaxPacketSize = cpu_to_le16(512);stop(dwc, true, false);
 	if (ret < 0)
 		goto err1;
 
