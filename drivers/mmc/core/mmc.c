@@ -1335,6 +1335,7 @@ static void mmc_select_driver_type(struct mmc_card *card)
 static int mmc_select_hs200(struct mmc_card *card)
 {
 	struct mmc_host *host = card->host;
+	bool send_status = true;
 	unsigned int old_timing, old_signal_voltage;
 	int err = -EINVAL;
 	u8 val;
