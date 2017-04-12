@@ -421,6 +421,7 @@ define sed-offsets
 	/^->/{s:->#\(.*\):/* \1 */:; \
 	s:^->\([^ ]*\) [\$$#]*\([^ ]*\) \(.*\):#define \1 \2 /* \3 */:; \
 	s:->::; p;}'
+
 endef
 
 # Use filechk to avoid rebuilds when a header changes, but the resulting file
