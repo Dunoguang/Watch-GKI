@@ -12,6 +12,18 @@
 *.symvers
 *.order
 built-in.o
+*.elf
+*.bin
+*.tar
+*.gz
+*.bz2
+*.lzma
+*.xz
+*.lz4
+*.lzo
+*.patch
+*.gcno
+*.ll
 Module.symvers
 modules.order
 
