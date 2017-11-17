@@ -25,7 +25,7 @@ unsigned long int_sqrt(unsigned long x)
 	while (m > x)
 		m >>= 2;
 
-	do {
+	while (m != 0) {
 		b = y + m;
 		y >>= 1;
 
