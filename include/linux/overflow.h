@@ -202,7 +202,6 @@
 
 #endif /* COMPILER_HAS_GENERIC_BUILTIN_OVERFLOW */
 
-<<<<<<< HEAD
 /**
  * array_size() - Calculate size of 2-dimensional array.
  *
@@ -276,6 +275,4 @@ static inline __must_check size_t __ab_c_size(size_t n, size_t size, size_t c)
 		    sizeof(*(p)->member) + __must_be_array((p)->member),\
 		    sizeof(*(p)))
 
-=======
->>>>>>> compiler.h: enable builtin overflow checkers and add fallback code
 #endif /* __LINUX_OVERFLOW_H */
