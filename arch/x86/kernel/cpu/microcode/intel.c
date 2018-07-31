@@ -919,6 +919,10 @@ static int apply_microcode_intel(int cpu)
 	uci->cpu_sig.rev = val[1];
 	c->microcode = val[1];
 
+	/* Update boot_cpu_data's revision too, if we're on the BSP: */
+	if (c->cpu_index == boot_cpu_data.cpu_index)
+		boot_cpu_data.microcode = rev;
+
 	return 0;
 }
 
