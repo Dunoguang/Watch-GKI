@@ -431,14 +431,10 @@ static ssize_t yurex_read(struct file *file, char __user *buffer, size_t count,
 	bytes_read = snprintf(in_buffer, 20, "%lld\n", dev->bbu);
 	spin_unlock_irqrestore(&dev->lock, flags);
 
-	if (*ppos < bytes_read) {
-		if (copy_to_user(buffer, in_buffer + *ppos, bytes_read - *ppos))
-			retval = -EFAULT;
-		else {
-			retval = bytes_read - *ppos;
-			*ppos += bytes_read;
-		}
-	}
+	if (WARN_ON_ONCE(bytes_read >= sizeof(in_buffer)))
+		return -EIO;
+
+	retval = simple_read_from_buffer(buffer, count, ppos, in_buffer, bytes_read);
 
 exit:
 	mutex_unlock(&dev->io_mutex);
