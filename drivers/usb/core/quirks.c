@@ -209,8 +209,6 @@ static const struct usb_device_id usb_quirk_list[] = {
 	{ USB_DEVICE(0x1a0a, 0x0200), .driver_info =
 			USB_QUIRK_LINEAR_UFRAME_INTR_BINTERVAL },
 
-<<<<<<< HEAD
-=======
 	/* Corsair K70 RGB */
 	{ USB_DEVICE(0x1b1c, 0x1b13), .driver_info = USB_QUIRK_DELAY_INIT },
 
@@ -235,7 +233,6 @@ static const struct usb_device_id usb_quirk_list[] = {
 	/* Acer C120 LED Projector */
 	{ USB_DEVICE(0x1de1, 0xc102), .driver_info = USB_QUIRK_NO_LPM },
 
->>>>>>> usb: quirks: Add delay-init quirk for Corsair K70 LUX RGB
 	/* Blackmagic Design Intensity Shuttle */
 	{ USB_DEVICE(0x1edb, 0xbd3b), .driver_info = USB_QUIRK_NO_LPM },
 
