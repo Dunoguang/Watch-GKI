@@ -2753,20 +2753,6 @@ err_coresight_register:
 	return ret;
 }
 
-<<<<<<< HEAD
-static int etm4_remove(struct amba_device *adev)
-{
-	struct etmv4_drvdata *drvdata = amba_get_drvdata(adev);
-
-	coresight_unregister(drvdata->csdev);
-	unregister_hotcpu_notifier(&drvdata->nb);
-	cpu_pm_unregister_notifier(&drvdata->pm_nb);
-
-	return 0;
-}
-
-=======
->>>>>>> coresight: removing bind/unbind options from sysfs
 static struct amba_id etm4_ids[] = {
 	{       /* ETM 4.0 - Qualcomm */
 		.id	= 0x0003b95d,

@@ -1935,20 +1935,6 @@ err_arch_supported:
 	return ret;
 }
 
-<<<<<<< HEAD
-static int etm_remove(struct amba_device *adev)
-{
-	struct etm_drvdata *drvdata = amba_get_drvdata(adev);
-
-	coresight_unregister(drvdata->csdev);
-	unregister_hotcpu_notifier(&drvdata->nb);
-	cpu_pm_unregister_notifier(&drvdata->pm_nb);
-
-	return 0;
-}
-
-=======
->>>>>>> coresight: removing bind/unbind options from sysfs
 #ifdef CONFIG_PM
 static int etm_runtime_suspend(struct device *dev)
 {

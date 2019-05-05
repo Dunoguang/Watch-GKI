@@ -897,23 +897,6 @@ err_devm_kzalloc:
 	return ret;
 }
 
-<<<<<<< HEAD
-static int tmc_remove(struct amba_device *adev)
-{
-	struct tmc_drvdata *drvdata = amba_get_drvdata(adev);
-
-	cpu_pm_unregister_notifier(&drvdata->nb);
-	misc_deregister(&drvdata->miscdev);
-	coresight_unregister(drvdata->csdev);
-	if (drvdata->config_type == TMC_CONFIG_TYPE_ETR)
-		dma_free_coherent(drvdata->dev, drvdata->size,
-				  &drvdata->paddr, GFP_KERNEL);
-
-	return 0;
-}
-
-=======
->>>>>>> coresight: removing bind/unbind options from sysfs
 static struct amba_id tmc_ids[] = {
 	{
 		.id     = 0x0003b961,

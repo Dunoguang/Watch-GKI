@@ -314,18 +314,6 @@ static int funnel_probe(struct amba_device *adev, const struct amba_id *id)
 	return 0;
 }
 
-<<<<<<< HEAD
-static int funnel_remove(struct amba_device *adev)
-{
-	struct funnel_drvdata *drvdata = amba_get_drvdata(adev);
-
-	cpu_pm_unregister_notifier(&drvdata->nb);
-	coresight_unregister(drvdata->csdev);
-	return 0;
-}
-
-=======
->>>>>>> coresight: removing bind/unbind options from sysfs
 #ifdef CONFIG_PM
 static int funnel_runtime_suspend(struct device *dev)
 {
