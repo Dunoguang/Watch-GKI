@@ -290,13 +290,43 @@ rx_submit(struct eth_dev *dev, struct usb_request *req, gfp_t gfp_flags)
 			size = max_t(size_t, size, dev->port_usb->fixed_out_len);
 	} else
 		out = NULL;
+<<<<<<< HEAD
 
 	spin_unlock_irqrestore(&dev->lock, flags);
 
 	if (!out || !dev->port_usb)
+=======
+
+	if (!out)
+	{
+		spin_unlock_irqrestore(&dev->lock, flags);
+>>>>>>> usb: gadget: ether: Fix race between gether_disconnect and rx_submit
 		return -ENOTCONN;
+	}
 
+<<<<<<< HEAD
+=======
+	/* Padding up to RX_EXTRA handles minor disagreements with host.
+	 * Normally we use the USB "terminate on short read" convention;
+	 * so allow up to (N*maxpacket), since that memory is normally
+	 * already allocated.  Some hardware doesn't deal well with short
+	 * reads (e.g. DMA must be N*maxpacket), so for now don't trim a
+	 * byte off the end (to force hardware errors on overflow).
+	 *
+	 * RNDIS uses internal framing, and explicitly allows senders to
+	 * pad to end-of-packet.  That's potentially nice for speed, but
+	 * means receivers can't recover lost synch on their own (because
+	 * new packets don't only start after a short RX).
+	 */
+	size += sizeof(struct ethhdr) + dev->net->mtu + RX_EXTRA;
+	size += dev->port_usb->header_len;
+	size += out->maxpacket - 1;
+	size -= size % out->maxpacket;
 
+	if (dev->port_usb->is_fixed)
+		size = max_t(size_t, size, dev->port_usb->fixed_out_len);
+	spin_unlock_irqrestore(&dev->lock, flags);
+>>>>>>> usb: gadget: ether: Fix race between gether_disconnect and rx_submit
 
 	DBG(dev, "%s: size: %zd\n", __func__, size);
 	skb = alloc_skb(size + NET_IP_ALIGN, gfp_flags);
