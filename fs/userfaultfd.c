@@ -447,10 +447,7 @@ static int userfaultfd_release(struct inode *inode, struct file *file)
 	 * taking the mmap_sem for writing.
 	 */
 	down_write(&mm->mmap_sem);
-<<<<<<< HEAD
-=======
 	still_valid = mmget_still_valid(mm);
->>>>>>> userfaultfd_release: always remove uffd flags and clear vm_userfaultfd_ctx
 	prev = NULL;
 	for (vma = mm->mmap; vma; vma = vma->vm_next) {
 		cond_resched();
@@ -461,30 +458,18 @@ static int userfaultfd_release(struct inode *inode, struct file *file)
 			continue;
 		}
 		new_flags = vma->vm_flags & ~(VM_UFFD_MISSING | VM_UFFD_WP);
-<<<<<<< HEAD
-		prev = vma_merge(mm, prev, vma->vm_start, vma->vm_end,
-				 new_flags, vma->anon_vma,
-				 vma->vm_file, vma->vm_pgoff,
-				 vma_policy(vma),
-				 NULL_VM_UFFD_CTX,
-				 vma_get_anon_name(vma));
-		if (prev)
-			vma = prev;
-		else
-			prev = vma;
-=======
 		if (still_valid) {
 			prev = vma_merge(mm, prev, vma->vm_start, vma->vm_end,
 					 new_flags, vma->anon_vma,
 					 vma->vm_file, vma->vm_pgoff,
 					 vma_policy(vma),
-					 NULL_VM_UFFD_CTX);
+					 NULL_VM_UFFD_CTX,
+					 vma_get_anon_name(vma));
 			if (prev)
 				vma = prev;
 			else
 				prev = vma;
 		}
->>>>>>> userfaultfd_release: always remove uffd flags and clear vm_userfaultfd_ctx
 		vma->vm_flags = new_flags;
 		vma->vm_userfaultfd_ctx = NULL_VM_UFFD_CTX;
 	}
