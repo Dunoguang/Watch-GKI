@@ -256,6 +256,47 @@ static int usb_parse_endpoint(struct device *ddev, int cfgno, int inum,
 			endpoint->desc.wMaxPacketSize = cpu_to_le16(8);
 	}
 
+	/* Validate the wMaxPacketSize field */
+	maxp = usb_endpoint_maxp(&endpoint->desc);
+	if (maxp == 0) {
+		dev_warn(ddev, "config %d interface %d altsetting %d endpoint 0x%X has wMaxPacketSize 0, skipping\n",
+		    cfgno, inum, asnum, d->bEndpointAddress);
+		goto skip_to_next_endpoint_or_interface_descriptor;
+	}
+
+	/* Find the highest legal maxpacket size for this endpoint */
+	i = 0;		/* additional transactions per microframe */
+	switch (to_usb_device(ddev)->speed) {
+	case USB_SPEED_LOW:
+		maxpacket_maxes = low_speed_maxpacket_maxes;
+		break;
+	case USB_SPEED_FULL:
+		maxpacket_maxes = full_speed_maxpacket_maxes;
+		break;
+	case USB_SPEED_HIGH:
+		/* Bits 12..11 are allowed only for HS periodic endpoints */
+		if (usb_endpoint_xfer_int(d) || usb_endpoint_xfer_isoc(d)) {
+			i = maxp & (BIT(12) | BIT(11));
+			maxp &= ~i;
+		}
+		/* fallthrough */
+	default:
+		maxpacket_maxes = high_speed_maxpacket_maxes;
+		break;
+	case USB_SPEED_SUPER:
+	case USB_SPEED_SUPER_PLUS:
+		maxpacket_maxes = super_speed_maxpacket_maxes;
+		break;
+	}
+	j = maxpacket_maxes[usb_endpoint_type(&endpoint->desc)];
+
+	if (maxp > j) {
+		dev_warn(ddev, "config %d interface %d altsetting %d endpoint 0x%X has invalid maxpacket %d, setting to %d\n",
+		    cfgno, inum, asnum, d->bEndpointAddress, maxp, j);
+		maxp = j;
+		endpoint->desc.wMaxPacketSize = cpu_to_le16(i | maxp);
+	}
+
 	/*
 	 * Some buggy high speed devices have bulk endpoints using
 	 * maxpacket sizes other than 512.  High speed HCDs may not
