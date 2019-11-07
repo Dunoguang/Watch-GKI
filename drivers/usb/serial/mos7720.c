@@ -1946,16 +1946,13 @@ static int mos7720_startup(struct usb_serial *serial)
 		serial->port[1]->interrupt_in_buffer = NULL;
 	}
 
-	/* setting configuration feature to one */
-	usb_control_msg(serial->dev, usb_sndctrlpipe(serial->dev, 0),
-			(__u8)0x03, 0x00, 0x01, 0x00, NULL, 0x00, 5000);
-
 	/* start the interrupt urb */
 	ret_val = usb_submit_urb(serial->port[0]->interrupt_in_urb, GFP_KERNEL);
 	if (ret_val)
 		dev_err(&dev->dev,
 			"%s - Error %d submitting control urb\n",
 			__func__, ret_val);
+
 
 #ifdef CONFIG_USB_SERIAL_MOS7715_PARPORT
 	if (product == MOSCHIP_DEVICE_ID_7715) {
