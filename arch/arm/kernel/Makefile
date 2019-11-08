@@ -98,6 +98,8 @@ endif
 
 obj-$(CONFIG_HAVE_ARM_SMCCC)	+= smccc-call.o
 
+obj-$(CONFIG_HAVE_ARM_SMCCC)	+= smccc-call.o
+
 extra-y := $(head-y) vmlinux.lds
 
 ##add by zxb for udc start
