@@ -640,6 +640,9 @@ static const struct option_blacklist_info telit_le922_blacklist_usbcfg3 = {
 	.sendsetup = BIT(0),
 	.reserved = BIT(1) | BIT(2) | BIT(3),
 };
+/* Device needs ZLP */
+#define ZLP		BIT(17)
+
 
 static const struct usb_device_id option_ids[] = {
 	{ USB_DEVICE(OPTION_VENDOR_ID, OPTION_PRODUCT_COLT) },
@@ -1245,6 +1248,8 @@ static const struct usb_device_id option_ids[] = {
 	  .driver_info = NCTRL(0) | RSVD(1) },
 	{ USB_DEVICE_INTERFACE_CLASS(TELIT_VENDOR_ID, 0x1901, 0xff),	/* Telit LN940 (MBIM) */
 	  .driver_info = NCTRL(0) },
+	{ USB_DEVICE(TELIT_VENDOR_ID, 0x9010),				/* Telit SBL FN980 flashing device */
+	  .driver_info = NCTRL(0) | ZLP },
 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_MF622, 0xff, 0xff, 0xff) }, /* ZTE WCDMA products */
 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0002, 0xff, 0xff, 0xff),
 		.driver_info = (kernel_ulong_t)&net_intf1_blacklist },
@@ -1774,6 +1779,7 @@ static const struct usb_device_id option_ids[] = {
 	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_PLXX),
 <<<<<<< HEAD
 		.driver_info = (kernel_ulong_t)&net_intf4_blacklist },
+	{ USB_DEVICE(		.driver_info = (kernel_ulong_t)&net_intf4_blacklist },
 	{ USB_DEVICE(CINTE		.driver_info = (kernel_ulong_t)&net_intf4_blacklist },
 	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_HC28_MDM) }, 
 	  .driver_info = RSVD(4) },
@@ -2026,12 +2032,12 @@ static int option_attach(struct usb_serial *serial)
 	if (!blacklist || !test_bit(iface_desc->bInterfaceNumber,
 						&blacklist->sendsetup)) {
 		data->use_send_setup = 1;
+<<<<<<< HEAD
 	}
-	spin_lock_init(&data->susp_lock);
 
-	usb_set_serial_data(serial, data);
+	if (device_flags & ZLP)
+		data->use_zlp = 1;
 
-	return 0;
 }
 
 static void option_release(struct usb_serial *serial)

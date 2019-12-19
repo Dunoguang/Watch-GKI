@@ -142,11 +142,6 @@ static void usb_parse_ss_endpoint_companion(struct device *ddev, int cfgno,
 	}
 }
 
-<<<<<<< HEAD
-static int usb_parse_endpoint(struct device *ddev, int cfgno, int inum,
-    int asnum, struct usb_host_interface *ifp, int num_ep,
-    unsigned char *buffer, int size)
-=======
 static const unsigned short low_speed_maxpacket_maxes[4] = {
 	[USB_ENDPOINT_XFER_CONTROL] = 8,
 	[USB_ENDPOINT_XFER_ISOC] = 0,
@@ -226,7 +221,6 @@ static int usb_parse_endpoint(struct device *ddev, int cfgno,
 		struct usb_host_config *config, int inum, int asnum,
 		struct usb_host_interface *ifp, int num_ep,
 		unsigned char *buffer, int size)
->>>>>>> USB: core: fix check for duplicate endpoints
 {
 	unsigned char *buffer0 = buffer;
 	struct usb_endpoint_descriptor *d;
@@ -260,8 +254,6 @@ static int usb_parse_endpoint(struct device *ddev, int cfgno,
 	if (ifp->desc.bNumEndpoints >= num_ep)
 		goto skip_to_next_endpoint_or_interface_descriptor;
 
-<<<<<<< HEAD
-=======
 	/* Check for duplicate endpoint addresses */
 	if (config_endpoint_is_duplicate(config, inum, asnum, d)) {
 		dev_warn(ddev, "config %d interface %d altsetting %d has a duplicate endpoint with address 0x%X, skipping\n",
@@ -269,7 +261,6 @@ static int usb_parse_endpoint(struct device *ddev, int cfgno,
 		goto skip_to_next_endpoint_or_interface_descriptor;
 	}
 
->>>>>>> USB: core: fix check for duplicate endpoints
 	endpoint = &ifp->endpoint[ifp->desc.bNumEndpoints];
 	++ifp->desc.bNumEndpoints;
 
