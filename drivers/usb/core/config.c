@@ -142,9 +142,91 @@ static void usb_parse_ss_endpoint_companion(struct device *ddev, int cfgno,
 	}
 }
 
+<<<<<<< HEAD
 static int usb_parse_endpoint(struct device *ddev, int cfgno, int inum,
     int asnum, struct usb_host_interface *ifp, int num_ep,
     unsigned char *buffer, int size)
+=======
+static const unsigned short low_speed_maxpacket_maxes[4] = {
+	[USB_ENDPOINT_XFER_CONTROL] = 8,
+	[USB_ENDPOINT_XFER_ISOC] = 0,
+	[USB_ENDPOINT_XFER_BULK] = 0,
+	[USB_ENDPOINT_XFER_INT] = 8,
+};
+static const unsigned short full_speed_maxpacket_maxes[4] = {
+	[USB_ENDPOINT_XFER_CONTROL] = 64,
+	[USB_ENDPOINT_XFER_ISOC] = 1023,
+	[USB_ENDPOINT_XFER_BULK] = 64,
+	[USB_ENDPOINT_XFER_INT] = 64,
+};
+static const unsigned short high_speed_maxpacket_maxes[4] = {
+	[USB_ENDPOINT_XFER_CONTROL] = 64,
+	[USB_ENDPOINT_XFER_ISOC] = 1024,
+
+	/* Bulk should be 512, but some devices use 1024: we will warn below */
+	[USB_ENDPOINT_XFER_BULK] = 1024,
+	[USB_ENDPOINT_XFER_INT] = 1024,
+};
+static const unsigned short super_speed_maxpacket_maxes[4] = {
+	[USB_ENDPOINT_XFER_CONTROL] = 512,
+	[USB_ENDPOINT_XFER_ISOC] = 1024,
+	[USB_ENDPOINT_XFER_BULK] = 1024,
+	[USB_ENDPOINT_XFER_INT] = 1024,
+};
+
+static bool endpoint_is_duplicate(struct usb_endpoint_descriptor *e1,
+		struct usb_endpoint_descriptor *e2)
+{
+	if (e1->bEndpointAddress == e2->bEndpointAddress)
+		return true;
+
+	if (usb_endpoint_xfer_control(e1) || usb_endpoint_xfer_control(e2)) {
+		if (usb_endpoint_num(e1) == usb_endpoint_num(e2))
+			return true;
+	}
+
+	return false;
+}
+
+/*
+ * Check for duplicate endpoint addresses in other interfaces and in the
+ * altsetting currently being parsed.
+ */
+static bool config_endpoint_is_duplicate(struct usb_host_config *config,
+		int inum, int asnum, struct usb_endpoint_descriptor *d)
+{
+	struct usb_endpoint_descriptor *epd;
+	struct usb_interface_cache *intfc;
+	struct usb_host_interface *alt;
+	int i, j, k;
+
+	for (i = 0; i < config->desc.bNumInterfaces; ++i) {
+		intfc = config->intf_cache[i];
+
+		for (j = 0; j < intfc->num_altsetting; ++j) {
+			alt = &intfc->altsetting[j];
+
+			if (alt->desc.bInterfaceNumber == inum &&
+					alt->desc.bAlternateSetting != asnum)
+				continue;
+
+			for (k = 0; k < alt->desc.bNumEndpoints; ++k) {
+				epd = &alt->endpoint[k].desc;
+
+				if (endpoint_is_duplicate(epd, d))
+					return true;
+			}
+		}
+	}
+
+	return false;
+}
+
+static int usb_parse_endpoint(struct device *ddev, int cfgno,
+		struct usb_host_config *config, int inum, int asnum,
+		struct usb_host_interface *ifp, int num_ep,
+		unsigned char *buffer, int size)
+>>>>>>> USB: core: fix check for duplicate endpoints
 {
 	unsigned char *buffer0 = buffer;
 	struct usb_endpoint_descriptor *d;
@@ -178,6 +260,16 @@ static int usb_parse_endpoint(struct device *ddev, int cfgno, int inum,
 	if (ifp->desc.bNumEndpoints >= num_ep)
 		goto skip_to_next_endpoint_or_interface_descriptor;
 
+<<<<<<< HEAD
+=======
+	/* Check for duplicate endpoint addresses */
+	if (config_endpoint_is_duplicate(config, inum, asnum, d)) {
+		dev_warn(ddev, "config %d interface %d altsetting %d has a duplicate endpoint with address 0x%X, skipping\n",
+				cfgno, inum, asnum, d->bEndpointAddress);
+		goto skip_to_next_endpoint_or_interface_descriptor;
+	}
+
+>>>>>>> USB: core: fix check for duplicate endpoints
 	endpoint = &ifp->endpoint[ifp->desc.bNumEndpoints];
 	++ifp->desc.bNumEndpoints;
 
@@ -435,8 +527,8 @@ static int usb_parse_interface(struct device *ddev, int cfgno,
 		if (((struct usb_descriptor_header *) buffer)->bDescriptorType
 		     == USB_DT_INTERFACE)
 			break;
-		retval = usb_parse_endpoint(ddev, cfgno, inum, asnum, alt,
-		    num_ep, buffer, size);
+		retval = usb_parse_endpoint(ddev, cfgno, config, inum, asnum,
+				alt, num_ep, buffer, size);
 		if (retval < 0)
 			return retval;
 		++n;
