@@ -292,12 +292,12 @@ static int  klsi_105_open(struct tty_struct *tty, struct usb_serial_port *port)
 	priv->cfg.unknown2 = cfg->unknown2;
 	spin_unlock_irqrestore(&priv->lock, flags);
 
+	kfree(cfg);
+
 	/* READ_ON and urb submission */
 	rc = usb_serial_generic_open(tty, port);
-	if (rc) {
-		retval = rc;
-		goto exit;
-	}
+	if (rc)
+		return rc;
 
 	rc = usb_control_msg(port->serial->dev,
 			     usb_sndctrlpipe(port->serial->dev, 0),
@@ -324,8 +324,7 @@ static int  klsi_105_open(struct tty_struct *tty, struct usb_serial_port *port)
 	} else
 		retval = rc;
 
-exit:
-	kfree(cfg);
+
 	return retval;
 }
 
