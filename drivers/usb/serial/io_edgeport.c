@@ -2933,19 +2933,38 @@ static int edge_startup(struct usb_serial *serial)
 			}
 		}
 
-		if (!interrupt_in_found || !bulk_in_found || !bulk_out_found) {
-			dev_err(ddev, "Error - the proper endpoints were not found!\n");
-			return -ENODEV;
+		if (response || !interrupt_in_found || !bulk_in_found ||
+							!bulk_out_found) {
+			if (!response) {
+				dev_err(ddev, "expected endpoints not found\n");
+				response = -ENODEV;
+			}
+
+			goto error;
 		}
 
 		/* start interrupt read for this edgeport this interrupt will
 		 * continue as long as the edgeport is connected */
 		response = usb_submit_urb(edge_serial->interrupt_read_urb,
 								GFP_KERNEL);
-		if (response)
+		if (response) {
 			dev_err(ddev, "%s - Error %d submitting control urb\n",
 				__func__, response);
+
+			goto error;
+		}
 	}
+	return response;
+
+error:
+	usb_free_urb(edge_serial->interrupt_read_urb);
+	kfree(edge_serial->interrupt_in_buffer);
+
+	usb_free_urb(edge_serial->read_urb);
+	kfree(edge_serial->bulk_in_buffer);
+
+	kfree(edge_serial);
+
 	return response;
 }
 
