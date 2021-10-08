@@ -1791,16 +1791,6 @@ static int validate_prctl_map(struct prctl_mm_map *prctl_map)
 	error = -EINVAL;
 
 	/*
-<<<<<<< HEAD
-	 * @brk should be after @end_data in traditional maps.
-	 */
-	if (prctl_map->start_brk < prctl_map->end_data ||
-	    prctl_map->brk < prctl_map->end_data)
-		goto out;
-
-	/*
-=======
->>>>>>> prctl: allow to setup brk for et_dyn executables
 	 * Neither we should allow to override limits if they set.
 	 */
 	if (check_data_rlimit(rlimit(RLIMIT_DATA), prctl_map->brk,
