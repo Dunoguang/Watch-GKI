@@ -4380,7 +4380,6 @@ hub_port_init(struct usb_hub *hub, struct usb_device *udev, int port1,
 	if (oldspeed == USB_SPEED_LOW)
 		delay = HUB_LONG_RESET_TIME;
 
->>>>>>> usb: hub: Fix usb enumeration issue due to address0 race
 	/* Reset the device; full speed may morph to high speed */
 	/* FIXME a USB 2.0 device may morph into SuperSpeed on reset. */
 	retval = hub_port_reset(hub, port1, udev, delay, false);
@@ -4655,9 +4654,6 @@ fail:
 		hub_port_disable(hub, port1, 0);
 		update_devnum(udev, devnum);	/* for disconnect processing */
 	}
-<<<<<<< HEAD
-	mutex_unlock(&hdev->bus->usb_address0_mutex);
-=======
 	return retval;
 }
 
