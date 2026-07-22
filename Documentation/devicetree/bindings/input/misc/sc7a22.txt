@@ -1,0 +1,16 @@
+Sensortek SC7A22/SC7A20 three-axis accelerometer
+
+Required properties:
+- compatible: must be "sprd,sc7a22"
+- reg: I2C address of the sensor
+
+Optional properties:
+- layout: mounting orientation from 0 through 7. Defaults to 0.
+
+Example:
+
+	sc7a22_acc@18 {
+		compatible = "sprd,sc7a22";
+		reg = <0x18>;
+		layout = <0>;
+	};
