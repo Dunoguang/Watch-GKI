@@ -23,7 +23,7 @@ config UDC_LCD_RGB
 	yes - support rgb udc_lcd; no  - not support rgb udc_lcd
 
 config UDC_LCD_MIPI
-    bool " UDC_LCD_MIPI"
+	bool "UDC_LCD_MIPI"
 	depends on UDC_LCD
 	default y
 	help
