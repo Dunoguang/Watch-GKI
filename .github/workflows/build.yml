@@ -48,7 +48,7 @@ jobs:
           echo "::group::Building kernel Image + dw99.dtb"
           set -o pipefail
           export CC="ccache aarch64-linux-gnu-gcc"
-          stdbuf -oL -eL make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- -j$(nproc) Image 2>&1 | while IFS= read -r line; do
+          stdbuf -oL -eL make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- -j$(nproc) Image sprd/dw99.dtb 2>&1 | while IFS= read -r line; do
             echo "$line"
             : $((i=i+1))
             if [ $((i % 50)) -eq 0 ]; then
@@ -64,7 +64,7 @@ jobs:
 
       - name: Verify output
         run: |
-          ls -lh boot.img arch/arm64/boot/Image
+          ls -lh boot.img arch/arm64/boot/Image arch/arm64/boot/dts/sprd/dw99.dtb
           file arch/arm64/boot/Image
 
       - name: Upload boot.img
