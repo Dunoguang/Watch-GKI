@@ -32,12 +32,11 @@ jobs:
           scripts/config --disable CONFIG_KSU_KPROBES_KSUD
           make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- olddefconfig
 
-      - name: Build kernel
+      - name: Build kernel + DTB
         run: |
-          echo "::group::Starting build at $(date)"
-          # Stream unbuffered output so GitHub UI shows live logs
+          echo "::group::Building kernel Image + dw99.dtb"
           set -o pipefail
-          stdbuf -oL -eL make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- -j$(nproc) Image 2>&1 | while IFS= read -r line; do
+          stdbuf -oL -eL make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- -j$(nproc) Image sprd/dw99.dtb 2>&1 | while IFS= read -r line; do
             echo "$line"
             : $((i=i+1))
             if [ $((i % 50)) -eq 0 ]; then
@@ -47,13 +46,16 @@ jobs:
           echo "::endgroup::"
           echo "::notice::✅ Build complete at $(date)"
 
+      - name: Package boot.img
+        run: python3 tools/mkbootimg.py
+
       - name: Verify output
         run: |
-          ls -lh arch/arm64/boot/Image
+          ls -lh boot.img arch/arm64/boot/Image arch/arm64/boot/dts/sprd/dw99.dtb
           file arch/arm64/boot/Image
 
-      - name: Upload kernel Image
+      - name: Upload boot.img
         uses: actions/upload-artifact@v4
         with:
-          name: kernel-Image
-          path: arch/arm64/boot/Image
+          name: boot.img
+          path: boot.img
