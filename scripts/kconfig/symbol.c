@@ -1096,6 +1096,7 @@ static void sym_check_print_recursive(struct symbol *last_sym)
 			break;
 	if (!stack) {
 		fprintf(stderr, "unexpected recursive dependency error\n");
+		check_top = saved_check_top;
 		return;
 	}
 
