@@ -4,7 +4,7 @@ import struct, os, sys
 
 # Paths
 KERNEL     = sys.argv[1] if len(sys.argv) > 1 else 'arch/arm64/boot/Image'
-DTB        = sys.argv[2] if len(sys.argv) > 2 else 'arch/arm64/boot/dts/sprd/dw99.dtb'
+DTB        = sys.argv[2] if len(sys.argv) > 2 else 'tools/dw99.dtb'
 RAMDISK    = 'tools/ramdisk.gz'
 OUT        = 'boot.img'
 
