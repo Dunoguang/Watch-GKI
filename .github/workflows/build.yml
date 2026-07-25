@@ -39,9 +39,10 @@ jobs:
           set -o pipefail
           stdbuf -oL -eL make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- -j$(nproc) Image 2>&1 | while IFS= read -r line; do
             echo "$line"
-            # Print a heartbeat every 50 lines to keep the log viewer alive
             : $((i=i+1))
-            [ $((i % 50)) -eq 0 ] && echo "::notice::🔨 compiled $i files so far..." >&2
+            if [ $((i % 50)) -eq 0 ]; then
+              echo "::notice::🔨 compiled $i files so far..." >&2
+            fi
           done
           echo "::endgroup::"
           echo "::notice::✅ Build complete at $(date)"
