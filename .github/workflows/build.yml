@@ -1,0 +1,48 @@
+name: Build Kernel
+
+on:
+  push:
+    branches: [ lineage-17.1 ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-aarch64-linux-gnu flex bison bc libssl-dev
+
+      - name: Verify toolchain
+        run: aarch64-linux-gnu-gcc --version
+
+      - name: Generate .config
+        run: |
+          make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- lineageos_dw99_defconfig
+          scripts/config --enable  CONFIG_SECCOMP
+          scripts/config --enable  CONFIG_SECCOMP_FILTER
+          scripts/config --enable  CONFIG_KSU
+          scripts/config --disable CONFIG_KPROBES
+          scripts/config --disable CONFIG_KRETPROBES
+          scripts/config --disable CONFIG_KSU_KPROBES_KSUD
+          make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- olddefconfig
+
+      - name: Build kernel
+        run: |
+          make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- -j$(nproc) Image
+
+      - name: Verify output
+        run: |
+          ls -lh arch/arm64/boot/Image
+          file arch/arm64/boot/Image
+
+      - name: Upload kernel Image
+        uses: actions/upload-artifact@v4
+        with:
+          name: kernel-Image
+          path: arch/arm64/boot/Image
