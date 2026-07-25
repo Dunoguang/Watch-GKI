@@ -3,6 +3,7 @@ name: Build Kernel
 on:
   push:
     branches: [ lineage-17.1 ]
+    tags-ignore: [ '**' ]
   workflow_dispatch:
 
 jobs:
