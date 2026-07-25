@@ -16,10 +16,21 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y gcc-aarch64-linux-gnu flex bison bc libssl-dev
+          sudo apt-get install -y gcc-aarch64-linux-gnu flex bison bc libssl-dev ccache
 
-      - name: Verify toolchain
-        run: aarch64-linux-gnu-gcc --version
+      - name: Cache ccache
+        uses: actions/cache@v4
+        with:
+          path: ~/.ccache
+          key: ccache-${{ runner.os }}-${{ hashFiles('.config') }}
+          restore-keys: ccache-${{ runner.os }}-
+
+      - name: Setup ccache
+        run: |
+          aarch64-linux-gnu-gcc --version
+          ccache --version
+          ccache -M 2G
+          ccache -z
 
       - name: Generate .config
         run: |
@@ -36,6 +47,7 @@ jobs:
         run: |
           echo "::group::Building kernel Image + dw99.dtb"
           set -o pipefail
+          export CC="ccache aarch64-linux-gnu-gcc"
           stdbuf -oL -eL make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- -j$(nproc) Image sprd/dw99.dtb 2>&1 | while IFS= read -r line; do
             echo "$line"
             : $((i=i+1))
@@ -45,6 +57,7 @@ jobs:
           done
           echo "::endgroup::"
           echo "::notice::✅ Build complete at $(date)"
+          ccache -s
 
       - name: Package boot.img
         run: python3 tools/mkbootimg.py
