@@ -15,6 +15,8 @@
 #include <linux/mutex.h>
 #include <linux/pinctrl/consumer.h>
 
+/* Forward declaration: get panel resolution from SPRD display driver */
+int sprd_panel_get_resolution(uint16_t *width, uint16_t *height);
 
 #define HYN_REG_BASE            0xD000
 #define HYN_REG_WORKMODE        0xD100
@@ -230,6 +232,7 @@ static int cst9217_probe(struct i2c_client *client, const struct i2c_device_id *
     struct cst9217_ts_data *ts;
     u32 coords[2];
     u32 gpios[3];
+    uint16_t panel_w = 0, panel_h = 0;
     int ret;
     
     // SPRD
@@ -297,13 +300,21 @@ static int cst9217_probe(struct i2c_client *client, const struct i2c_device_id *
     }
     msleep(20);
 
-    // 分辨率
-    if (of_property_read_u32_array(np, "hynitron,display-coords", coords, 2) == 0) {
-        ts->abs_x_max = coords[0];
-        ts->abs_y_max = coords[1];
-    } else {
-        ts->abs_x_max = 720; 
-        ts->abs_y_max = 1280;
+    // 分辨率 - 优先从显示面板动态获取
+    {
+        if (sprd_panel_get_resolution(&panel_w, &panel_h) == 0) {
+            ts->abs_x_max = panel_w;
+            ts->abs_y_max = panel_h;
+            HYN_INFO("Using panel resolution: %dx%d\n", panel_w, panel_h);
+        } else if (of_property_read_u32_array(np, "hynitron,display-coords", coords, 2) == 0) {
+            ts->abs_x_max = coords[0];
+            ts->abs_y_max = coords[1];
+            HYN_INFO("Using DT fallback: %dx%d\n", coords[0], coords[1]);
+        } else {
+            ts->abs_x_max = 720;
+            ts->abs_y_max = 1280;
+            HYN_INFO("Using hardcoded default: 720x1280\n");
+        }
     }
 
     // 注册 Input

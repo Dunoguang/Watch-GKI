@@ -57,6 +57,10 @@
 #include <linux/of_device.h>
 #include <linux/of_address.h>
 #include <linux/of_gpio.h>
+
+/* Forward declaration: exported by sprd_panel.c, get panel resolution dynamically */
+int sprd_panel_get_resolution(uint16_t *width, uint16_t *height);
+
 /*=============================================================*/
 /*  CONSTANT VALUE DEFINITION */
 /*=============================================================*/
@@ -126,15 +130,16 @@ static struct msg2xxx_ts_platform_data *pixcir_ts_parse_dt(struct device *dev)
 	for (i = 0; i < 12; i++) {
 		pdata->virtualkeys[i] = buf[i];
 	}
+	/* TP_MAX_X / TP_MAX_Y are now optional: prefer dynamic panel resolution */
 	ret = of_property_read_u32(np, "TP_MAX_X", &pdata->TP_MAX_X);
 	if (ret) {
-		dev_err(dev, "fail to get TP_MAX_X\n");
-		goto fail;
+		dev_info(dev, "TP_MAX_X not in DT, will use panel resolution\n");
+		pdata->TP_MAX_X = 0;
 	}
 	ret = of_property_read_u32(np, "TP_MAX_Y", &pdata->TP_MAX_Y);
 	if (ret) {
-		dev_err(dev, "fail to get TP_MAX_Y\n");
-		goto fail;
+		dev_info(dev, "TP_MAX_Y not in DT, will use panel resolution\n");
+		pdata->TP_MAX_Y = 0;
 	}
 
 	return pdata;
@@ -160,6 +165,7 @@ static int /*__devinit*/ touch_driver_probe(struct i2c_client *client,
 /* 	const char *vcc_i2c_name = "vcc_i2c"; */
 #endif /* CONFIG_ENABLE_REGULATOR_POWER_ON */
 	struct device_node *np;
+	uint16_t panel_w = 0, panel_h = 0;
 
 	printk("*** %s ***\n", __FUNCTION__);
 
@@ -184,8 +190,24 @@ static int /*__devinit*/ touch_driver_probe(struct i2c_client *client,
 	g_I2cClient = client;
 	MS_TS_MSG_IC_GPIO_RST = pdata->reset_gpio_number;
 	MS_TS_MSG_IC_GPIO_INT = pdata->irq_gpio_number;
-	TOUCH_SCREEN_X_MAX = pdata->TP_MAX_X;
-	TOUCH_SCREEN_Y_MAX = pdata->TP_MAX_Y;
+
+	/* Try dynamic panel resolution first, fallback to DTB hardcoded values */
+	{
+		if (sprd_panel_get_resolution(&panel_w, &panel_h) == 0) {
+			TOUCH_SCREEN_X_MAX = panel_w;
+			TOUCH_SCREEN_Y_MAX = panel_h;
+			printk("mstar: using panel resolution %dx%d\n",
+			       panel_w, panel_h);
+		} else if (pdata->TP_MAX_X && pdata->TP_MAX_Y) {
+			TOUCH_SCREEN_X_MAX = pdata->TP_MAX_X;
+			TOUCH_SCREEN_Y_MAX = pdata->TP_MAX_Y;
+			printk("mstar: using DT fallback %dx%d\n",
+			       pdata->TP_MAX_X, pdata->TP_MAX_Y);
+		} else {
+			printk("mstar: no resolution available, abort\n");
+			goto exit_alloc_platform_data_failed;
+		}
+	}
 
 #ifdef CONFIG_ENABLE_REGULATOR_POWER_ON
 	g_ReguVdd = regulator_get(&g_I2cClient->dev, pdata->vdd_name);

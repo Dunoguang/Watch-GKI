@@ -986,6 +986,23 @@ err:
 	return 0;
 }
 
+/**
+ * sprd_panel_get_resolution - Get primary panel pixel resolution
+ * @width:  pointer to store panel width in pixels
+ * @height: pointer to store panel height in pixels
+ *
+ * Returns 0 on success, -ENODEV if no panel registered.
+ */
+int sprd_panel_get_resolution(uint16_t *width, uint16_t *height)
+{
+	if (!panels[0] || !panels[0]->panel)
+		return -ENODEV;
+	*width = panels[0]->panel->width;
+	*height = panels[0]->panel->height;
+	return 0;
+}
+EXPORT_SYMBOL(sprd_panel_get_resolution);
+
 static int panel_runtime_suspend(struct device *dev)
 {
 	int index;

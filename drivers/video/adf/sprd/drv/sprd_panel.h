@@ -252,4 +252,6 @@ extern struct panel_ops panel_ops_spi;
 
 void panel_power_ctrl(struct power_sequence *seq);
 
+int sprd_panel_get_resolution(uint16_t *width, uint16_t *height);
+
 #endif

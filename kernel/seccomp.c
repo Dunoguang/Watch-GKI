@@ -111,8 +111,11 @@ static int seccomp_check_filter(struct sock_filter *filter, unsigned int flen)
 		case BPF_LD | BPF_W | BPF_ABS:
 			ftest->code = BPF_LDX | BPF_W | BPF_ABS;
 			/* 32-bit aligned and not out of bounds. */
-			if (k >= sizeof(struct seccomp_data) || k & 3)
+			if (k >= sizeof(struct seccomp_data) || k & 3) {
+				pr_warn_ratelimited("seccomp: BPF_LD_ABS bad offset=%u (max=%zu, align=%d) at pc=%d\n",
+					k, sizeof(struct seccomp_data), k & 3, pc);
 				return -EINVAL;
+			}
 			continue;
 		case BPF_LD | BPF_W | BPF_LEN:
 			ftest->code = BPF_LD | BPF_IMM;
@@ -163,6 +166,8 @@ static int seccomp_check_filter(struct sock_filter *filter, unsigned int flen)
 		case BPF_JMP | BPF_JSET | BPF_X:
 			continue;
 		default:
+			pr_warn_ratelimited("seccomp: unknown BPF opcode 0x%04x (class=0x%02x, jt=%u, jf=%u, k=0x%x) at pc=%d\n",
+				code, code & 0x07, ftest->jt, ftest->jf, ftest->k, pc);
 			return -EINVAL;
 		}
 	}
@@ -358,8 +363,11 @@ static struct seccomp_filter *seccomp_prepare_filter(struct sock_fprog *fprog)
 	int ret;
 	const bool save_orig = config_enabled(CONFIG_CHECKPOINT_RESTORE);
 
-	if (fprog->len == 0 || fprog->len > BPF_MAXINSNS)
+	if (fprog->len == 0 || fprog->len > BPF_MAXINSNS) {
+		pr_warn_ratelimited("seccomp: filter len=%u invalid (max=%u)\n",
+			fprog->len, BPF_MAXINSNS);
 		return ERR_PTR(-EINVAL);
+	}
 
 	BUG_ON(INT_MAX / fprog->len < sizeof(struct sock_filter));
 
@@ -382,6 +390,8 @@ static struct seccomp_filter *seccomp_prepare_filter(struct sock_fprog *fprog)
 	ret = bpf_prog_create_from_user(&sfilter->prog, fprog,
 					seccomp_check_filter, save_orig);
 	if (ret < 0) {
+		pr_warn_ratelimited("seccomp: bpf_prog_create_from_user failed, len=%u, ret=%d\n",
+			fprog->len, ret);
 		kfree(sfilter);
 		return ERR_PTR(ret);
 	}
