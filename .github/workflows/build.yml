@@ -43,6 +43,9 @@ jobs:
           key: ccache-${{ runner.os }}-${{ hashFiles('arch/arm64/configs/lineageos_dw99_defconfig') }}
           restore-keys: |
             ccache-${{ runner.os }}-
+          # CRITICAL: always overwrite saved cache even on primary-key hit,
+          # otherwise the old (empty) cache is never replaced.
+          save-always: true
 
       - name: Setup ccache
         run: |
