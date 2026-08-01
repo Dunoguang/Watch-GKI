@@ -21,6 +21,7 @@ jobs:
       CCACHE_MAXSIZE: 4G
       CCACHE_NOHASHDIR: "true"
       CCACHE_HARDLINK: "true"
+      CCACHE_COMPRESS: "1"   # zstd compress cache: 2.1GB .o -> ~700MB, faster upload/download
 
     steps:
       - name: Checkout
