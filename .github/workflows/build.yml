@@ -21,9 +21,9 @@ jobs:
       CCACHE_MAXSIZE: 4G
       CCACHE_NOHASHDIR: "true"
       CCACHE_HARDLINK: "true"
-      # NOTE: NO compression - compressed cache forces zstd decompress on every
-      # hit (2130 files ~82s). Uncompressed + hardlink = near-instant cache hits.
-      CCACHE_COMPRESS: "0"
+      # No compression (default): compressed cache forces zstd decompress on
+      # every hit (~82s). Uncompressed + hardlink = near-instant cache hits.
+      CCACHE_NOCOMPRESS: "true"
       CCACHE_DIR: /home/runner/.ccache  # force cache dir to match actions/cache path
 
     steps:
