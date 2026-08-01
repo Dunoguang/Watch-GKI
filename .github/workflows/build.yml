@@ -33,19 +33,16 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y gcc-aarch64-linux-gnu flex bison bc libssl-dev ccache
 
-      # Key is bound ONLY to defconfig (the real build input). ccache is
-      # content-addressed, so source changes still hit for unchanged files.
-      # NOT including build.yml -> editing the workflow no longer invalidates cache.
-      - name: Cache ccache
-        uses: actions/cache@v6.1.0
+      # Restore + save ccache separately (official docs; save-always is deprecated).
+      # Key bound to defconfig only -> editing workflow won't invalidate cache.
+      - name: Restore ccache
+        id: cache-restore
+        uses: actions/cache/restore@v6.1.0
         with:
           path: ~/.ccache
           key: ccache-${{ runner.os }}-${{ hashFiles('arch/arm64/configs/lineageos_dw99_defconfig') }}
           restore-keys: |
             ccache-${{ runner.os }}-
-          # CRITICAL: always overwrite saved cache even on primary-key hit,
-          # otherwise the old (empty) cache is never replaced.
-          save-always: true
 
       - name: Setup ccache
         run: |
@@ -103,6 +100,14 @@ jobs:
         run: |
           ls -lh boot.img arch/arm64/boot/Image arch/arm64/boot/dts/sprd/dw99.dtb
           file arch/arm64/boot/Image
+
+      # Always save latest ccache state (per docs: always() + restore output key)
+      - name: Save ccache
+        if: always()
+        uses: actions/cache/save@v6.1.0
+        with:
+          path: ~/.ccache
+          key: ${{ steps.cache-restore.outputs.cache-primary-key }}
 
       - name: Upload boot.img
         uses: actions/upload-artifact@v7.0.1
