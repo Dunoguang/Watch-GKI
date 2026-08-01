@@ -26,7 +26,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v7.0.0
+        uses: actions/checkout@v7.0.1
 
       - name: Install dependencies
         run: |
@@ -37,7 +37,7 @@ jobs:
       # content-addressed, so source changes still hit for unchanged files.
       # NOT including build.yml -> editing the workflow no longer invalidates cache.
       - name: Cache ccache
-        uses: actions/cache@v4
+        uses: actions/cache@v6.1.0
         with:
           path: ~/.ccache
           key: ccache-${{ runner.os }}-${{ hashFiles('arch/arm64/configs/lineageos_dw99_defconfig') }}
@@ -81,17 +81,10 @@ jobs:
       - name: Build kernel + DTB
         run: |
           echo "::group::Building kernel Image + dw99.dtb"
-          set -o pipefail
           # NOTE: CC is hard-coded in Makefile as $(CROSS_COMPILE)gcc (= overrides env),
           # so ccache MUST go into CROSS_COMPILE (?= respects env), not CC.
           export CROSS_COMPILE="ccache aarch64-linux-gnu-"
-          stdbuf -oL -eL make ARCH=arm64 CROSS_COMPILE="ccache aarch64-linux-gnu-" -j$(nproc) Image sprd/dw99.dtb 2>&1 | while IFS= read -r line; do
-            echo "$line"
-            : $((i=i+1))
-            if [ $((i % 50)) -eq 0 ]; then
-              echo "::notice::🔨 compiled $i files so far..." >&2
-            fi
-          done
+          make ARCH=arm64 CROSS_COMPILE="ccache aarch64-linux-gnu-" -j$(nproc) Image sprd/dw99.dtb 2>&1
           echo "::endgroup::"
           echo "::notice::✅ Build complete at $(date)"
 
@@ -112,7 +105,7 @@ jobs:
           file arch/arm64/boot/Image
 
       - name: Upload boot.img
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7.0.1
         with:
           name: boot.img-${{ steps.config.outputs.ksu }}
           path: boot.img
