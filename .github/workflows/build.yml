@@ -16,6 +16,12 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    # ccache tuning: keep cache across runners, ignore abs-path hash
+    env:
+      CCACHE_MAXSIZE: 4G
+      CCACHE_NOHASHDIR: "true"
+      CCACHE_HARDLINK: "true"
+
     steps:
       - name: Checkout
         uses: actions/checkout@v7.0.0
@@ -25,18 +31,21 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y gcc-aarch64-linux-gnu flex bison bc libssl-dev ccache
 
+      # Cache key is derived from real build inputs (defconfig + workflow),
+      # so config changes produce a new cache while unchanged configs hit it.
       - name: Cache ccache
         uses: actions/cache@v4
         with:
           path: ~/.ccache
-          key: ccache-${{ runner.os }}-${{ hashFiles('.config') }}
-          restore-keys: ccache-${{ runner.os }}-
+          key: ccache-${{ runner.os }}-${{ hashFiles('arch/arm64/configs/lineageos_dw99_defconfig', '.github/workflows/build.yml') }}
+          restore-keys: |
+            ccache-${{ runner.os }}-
 
       - name: Setup ccache
         run: |
           aarch64-linux-gnu-gcc --version
           ccache --version
-          ccache -M 2G
+          ccache -M 4G
           ccache -z
 
       - name: Generate .config
@@ -75,7 +84,14 @@ jobs:
           done
           echo "::endgroup::"
           echo "::notice::✅ Build complete at $(date)"
+
+      # Show ccache effectiveness after build
+      - name: ccache stats
+        run: |
           ccache -s
+          HITS=$(ccache -s | awk '/Hits/ {print $2; exit}')
+          MISSES=$(ccache -s | awk '/Misses/ {print $2; exit}')
+          { echo "## 📊 ccache 缓存统计"; echo ""; echo "\`\`\`"; ccache -s; echo "\`\`\`"; echo ""; echo "Hits: $HITS / Misses: $MISSES"; } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Package boot.img
         run: python3 tools/mkbootimg.py
