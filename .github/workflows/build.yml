@@ -16,12 +16,12 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
-    # ccache tuning: keep cache across runners, ignore abs-path hash
+    # ccache tuning: keep cache across runners, ignore abs-path hash, compress
     env:
       CCACHE_MAXSIZE: 4G
       CCACHE_NOHASHDIR: "true"
       CCACHE_HARDLINK: "true"
-      CCACHE_COMPRESS: "1"   # zstd compress cache: 2.1GB .o -> ~700MB, faster upload/download
+      CCACHE_COMPRESS: "1"   # zstd compress cache: ~700MB instead of 2.1GB
 
     steps:
       - name: Checkout
@@ -32,13 +32,14 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y gcc-aarch64-linux-gnu flex bison bc libssl-dev ccache
 
-      # Cache key is derived from real build inputs (defconfig + workflow),
-      # so config changes produce a new cache while unchanged configs hit it.
+      # Key is bound ONLY to defconfig (the real build input). ccache is
+      # content-addressed, so source changes still hit for unchanged files.
+      # NOT including build.yml -> editing the workflow no longer invalidates cache.
       - name: Cache ccache
         uses: actions/cache@v4
         with:
           path: ~/.ccache
-          key: ccache-${{ runner.os }}-${{ hashFiles('arch/arm64/configs/lineageos_dw99_defconfig', '.github/workflows/build.yml') }}
+          key: ccache-${{ runner.os }}-${{ hashFiles('arch/arm64/configs/lineageos_dw99_defconfig') }}
           restore-keys: |
             ccache-${{ runner.os }}-
 
