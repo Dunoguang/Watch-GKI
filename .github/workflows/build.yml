@@ -5,6 +5,12 @@ on:
     branches: [ lineage-17.1 ]
     tags-ignore: [ '**' ]
   workflow_dispatch:
+    inputs:
+      enable_ksu:
+        description: 'Enable KernelSU (KSU) in kernel'
+        required: true
+        default: true
+        type: boolean
 
 jobs:
   build:
@@ -34,11 +40,22 @@ jobs:
           ccache -z
 
       - name: Generate .config
+        id: config
         run: |
           make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- lineageos_dw99_defconfig
           scripts/config --enable  CONFIG_SECCOMP
           scripts/config --enable  CONFIG_SECCOMP_FILTER
-          scripts/config --enable  CONFIG_KSU
+
+          # KSU switch: manual dispatch can toggle; push defaults to enabled
+          if [ "${{ github.event.inputs.enable_ksu }}" = "false" ]; then
+            echo "::notice::🚫 KernelSU DISABLED (manual choice)"
+            echo "ksu=noksu" >> "$GITHUB_OUTPUT"
+            scripts/config --disable CONFIG_KSU
+          else
+            echo "::notice::✅ KernelSU ENABLED (default)"
+            echo "ksu=ksu" >> "$GITHUB_OUTPUT"
+            scripts/config --enable  CONFIG_KSU
+          fi
           scripts/config --disable CONFIG_KPROBES
           scripts/config --disable CONFIG_KRETPROBES
           scripts/config --disable CONFIG_KSU_KPROBES_KSUD
@@ -71,5 +88,5 @@ jobs:
       - name: Upload boot.img
         uses: actions/upload-artifact@v4
         with:
-          name: boot.img
+          name: boot.img-${{ steps.config.outputs.ksu }}
           path: boot.img
