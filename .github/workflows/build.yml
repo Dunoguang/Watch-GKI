@@ -22,6 +22,7 @@ jobs:
       CCACHE_NOHASHDIR: "true"
       CCACHE_HARDLINK: "true"
       CCACHE_COMPRESS: "1"   # zstd compress cache: ~700MB instead of 2.1GB
+      CCACHE_DIR: /home/runner/.ccache  # force cache dir to match actions/cache path
 
     steps:
       - name: Checkout
@@ -47,8 +48,10 @@ jobs:
         run: |
           aarch64-linux-gnu-gcc --version
           ccache --version
+          mkdir -p ~/.ccache
           ccache -M 4G
           ccache -z
+          echo "ccache cache_dir: $(ccache --show-config | grep cache_dir)" 
 
       - name: Generate .config
         id: config
