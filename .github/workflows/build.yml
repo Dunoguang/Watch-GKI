@@ -42,8 +42,9 @@ jobs:
         uses: actions/cache/restore@v6.1.0
         with:
           path: ~/.ccache
-          key: ccache-${{ runner.os }}-${{ hashFiles('arch/arm64/configs/lineageos_dw99_defconfig') }}
+          key: ccache-${{ runner.os }}-${{ hashFiles('arch/arm64/configs/lineageos_dw99_defconfig') }}-${{ github.run_id }}
           restore-keys: |
+            ccache-${{ runner.os }}-${{ hashFiles('arch/arm64/configs/lineageos_dw99_defconfig') }}-
             ccache-${{ runner.os }}-
 
       - name: Setup ccache
@@ -109,7 +110,8 @@ jobs:
         uses: actions/cache/save@v6.1.0
         with:
           path: ~/.ccache
-          key: ${{ steps.cache-restore.outputs.cache-primary-key }}
+          # unique key per run -> always saves successfully; restore finds it via prefix
+          key: ccache-${{ runner.os }}-${{ hashFiles('arch/arm64/configs/lineageos_dw99_defconfig') }}-${{ github.run_id }}
 
       - name: Upload boot.img
         uses: actions/upload-artifact@v7.0.1
