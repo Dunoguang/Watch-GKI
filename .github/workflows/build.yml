@@ -79,8 +79,10 @@ jobs:
         run: |
           echo "::group::Building kernel Image + dw99.dtb"
           set -o pipefail
-          export CC="ccache aarch64-linux-gnu-gcc"
-          stdbuf -oL -eL make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- -j$(nproc) Image sprd/dw99.dtb 2>&1 | while IFS= read -r line; do
+          # NOTE: CC is hard-coded in Makefile as $(CROSS_COMPILE)gcc (= overrides env),
+          # so ccache MUST go into CROSS_COMPILE (?= respects env), not CC.
+          export CROSS_COMPILE="ccache aarch64-linux-gnu-"
+          stdbuf -oL -eL make ARCH=arm64 CROSS_COMPILE="ccache aarch64-linux-gnu-" -j$(nproc) Image sprd/dw99.dtb 2>&1 | while IFS= read -r line; do
             echo "$line"
             : $((i=i+1))
             if [ $((i % 50)) -eq 0 ]; then
