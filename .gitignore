@@ -1,0 +1,77 @@
+# ===== Build artifacts =====
+*.o
+*.o.cmd
+.*.cmd
+*.ko
+*.mod
+*.mod.c
+*.mod.o
+*.a
+*.so
+*.symtypes
+*.symvers
+*.order
+built-in.o
+Module.symvers
+modules.order
+
+# ===== Generated source =====
+crypto/asymmetric_keys/*-asn1.c
+crypto/asymmetric_keys/*-asn1.h
+crypto/rsa*-asn1.c
+crypto/rsa*-asn1.h
+lib/oid_registry_data.c
+net/wireless/regdb.c
+scripts/dtc/dtc-lexer.lex.c
+scripts/dtc/dtc-parser.tab.c
+scripts/dtc/dtc-parser.tab.h
+scripts/genksyms/*.hash.c
+scripts/genksyms/lex.lex.c
+scripts/genksyms/parse.tab.c
+scripts/genksyms/parse.tab.h
+scripts/kconfig/*.hash.c
+scripts/kconfig/zconf.lex.c
+scripts/kconfig/zconf.tab.c
+scripts/kconfig/zconf.tab.h
+kernel/config_data.h
+lib/crc32table.h
+scripts/mod/devicetable-offsets.h
+scripts/mod/elfconfig.h
+security/selinux/av_permissions.h
+security/selinux/flask.h
+
+# ===== DTB / images =====
+*.dtb
+*.dtb.S
+*.dtbo
+vmlinux
+vmlinux.*
+arch/arm64/boot/Image
+arch/arm64/boot/Image.gz
+boot.img
+
+# ===== misc =====
+*.tmp
+*~
+
+# ===== modules.builtin / build metadata =====
+modules.builtin
+modules.order
+include/config/*.cmd
+.tmp_vmlinux*
+
+# ===== initramfs / cpio =====
+usr/initramfs_data.cpio.gz
+usr/initramfs_data.cpio
+usr/gen_init_cpio
+usr/.initramfs_data.cpio.d
+
+# ===== built host tools =====
+scripts/basic/bin2c
+scripts/basic/fixdep
+scripts/sortextable
+scripts/selinux/mdp/mdp
+scripts/kallsyms
+scripts/recordmcount
+scripts/conmakehash
+scripts/mod/modpost

@@ -1,5 +1,6 @@
-use anyhow::{Result, ensure};
 use std::io::{Read, Seek, SeekFrom};
+
+use anyhow::{Result, ensure};
 
 pub fn get_apk_signature(apk: &str) -> Result<(u32, String)> {
     let mut buffer = [0u8; 0x10];
@@ -81,7 +82,7 @@ pub fn get_apk_signature(apk: &str) -> Result<(u32, String)> {
     }
 
     if v3_signing_exist || v3_1_signing_exist {
-        return Err(anyhow::anyhow!("Unexpected v3 signature found!",));
+        return Err(anyhow::anyhow!("Unexpected v3 signature found!"));
     }
 
     v2_signing.ok_or_else(|| anyhow::anyhow!("No signature found!"))

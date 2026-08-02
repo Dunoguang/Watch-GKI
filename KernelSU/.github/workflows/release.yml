@@ -17,6 +17,13 @@ jobs:
       - name: Download artifacts
         uses: actions/download-artifact@v8
 
+      - name: Download Manager artifacts
+        uses: actions/download-artifact@v8
+        with:
+          path: manager
+          pattern: "Manager-*"
+          merge-multiple: true
+
       - name: Rename ksud
         run: |
           mkdir -p ksud
@@ -36,10 +43,8 @@ jobs:
         run: ls -R
 
       - name: release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: |
             manager/*.apk
-            android*-lkm/*_kernelsu.ko
             ksud/ksud-*
-            ksuinit/**

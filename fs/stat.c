@@ -14,9 +14,24 @@
 #include <linux/security.h>
 #include <linux/syscalls.h>
 #include <linux/pagemap.h>
+#ifdef CONFIG_KSU_SUSFS
+#include <linux/susfs_def.h>
+extern struct static_key_true ksu_is_init_rc_hook_enabled;
+extern void ksu_handle_vfs_fstat(int fd, loff_t *kstat_size_ptr);
+#endif
+#ifdef CONFIG_KSU_SUSFS_OPEN_REDIRECT
+extern int susfs_open_redirect_spoof_vfs_readlink(struct inode *inode, char __user *buffer, int buflen);
+#endif
 
 #include <asm/uaccess.h>
 #include <asm/unistd.h>
+
+#ifdef CONFIG_KSU_SUSFS_SUS_KSTAT
+extern void susfs_sus_kstat_spoof_generic_fillattr(struct inode *inode, struct kstat *stat);
+#endif
+#ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
+extern int susfs_get_non_sus_mnt_id_from_mnt(struct mount *orig_mnt);
+#endif
 
 void generic_fillattr(struct inode *inode, struct kstat *stat)
 {
@@ -33,6 +48,9 @@ void generic_fillattr(struct inode *inode, struct kstat *stat)
 	stat->ctime = inode->i_ctime;
 	stat->blksize = i_blocksize(inode);
 	stat->blocks = inode->i_blocks;
+#ifdef CONFIG_KSU_SUSFS_SUS_KSTAT
+	susfs_sus_kstat_spoof_generic_fillattr(inode, stat);
+#endif
 }
 
 EXPORT_SYMBOL(generic_fillattr);
@@ -53,8 +71,16 @@ int vfs_getattr_nosec(struct path *path, struct kstat *stat)
 {
 	struct inode *inode = d_backing_inode(path->dentry);
 
-	if (inode->i_op->getattr)
+	if (inode->i_op->getattr) {
+#ifdef CONFIG_KSU_SUSFS_SUS_KSTAT
+		int err = inode->i_op->getattr(path->mnt, path->dentry, stat);
+		if (!err)
+			susfs_sus_kstat_spoof_generic_fillattr(inode, stat);
+		return err;
+#else
 		return inode->i_op->getattr(path->mnt, path->dentry, stat);
+#endif
+	}
 
 	generic_fillattr(inode, stat);
 	return 0;
@@ -81,6 +107,10 @@ int vfs_fstat(unsigned int fd, struct kstat *stat)
 
 	if (f.file) {
 		error = vfs_getattr(&f.file->f_path, stat);
+#ifdef CONFIG_KSU_SUSFS
+		if (static_branch_unlikely(&ksu_is_init_rc_hook_enabled))
+			ksu_handle_vfs_fstat(fd, &stat->size);
+#endif // #ifdef CONFIG_KSU_SUSFS
 		fdput(f);
 	}
 	return error;
@@ -128,6 +158,9 @@ EXPORT_SYMBOL(vfs_fstatat);
 
 int vfs_stat(const char __user *name, struct kstat *stat)
 {
+
+
+
 	return vfs_fstatat(AT_FDCWD, name, stat, 0);
 }
 EXPORT_SYMBOL(vfs_stat);
@@ -163,6 +196,18 @@ static int cp_old_stat(struct kstat *stat, struct __old_kernel_stat __user * sta
 	tmp.st_dev = old_encode_dev(stat->dev);
 	tmp.st_ino = stat->ino;
 	if (sizeof(tmp.st_ino) < sizeof(stat->ino) && tmp.st_ino != stat->ino)
+#ifdef CONFIG_KSU_SUSFS
+	if (likely(susfs_is_current_proc_umounted()))
+		goto orig_flow;
+
+	if (static_branch_likely(&ksu_su_compat_enabled)) {
+		if (unlikely(__ksu_is_allow_uid_for_current(current_uid().val)))
+			ksu_handle_stat(&dfd, &filename, &flags);
+	}
+
+orig_flow:
+#endif
+
 		return -EOVERFLOW;
 	tmp.st_mode = stat->mode;
 	tmp.st_nlink = stat->nlink;
@@ -309,6 +354,13 @@ SYSCALL_DEFINE4(newfstatat, int, dfd, const char __user *, filename,
 }
 #endif
 
+#ifdef CONFIG_KSU_MANUAL_HOOK
+extern void ksu_handle_newfstat_ret(unsigned int *fd, struct stat __user **statbuf_ptr);
+#if defined(__ARCH_WANT_STAT64) || defined(__ARCH_WANT_COMPAT_STAT64)
+extern void ksu_handle_fstat64_ret(unsigned long *fd, struct stat64 __user **statbuf_ptr);
+#endif
+#endif
+
 SYSCALL_DEFINE2(newfstat, unsigned int, fd, struct stat __user *, statbuf)
 {
 	struct kstat stat;
@@ -317,6 +369,9 @@ SYSCALL_DEFINE2(newfstat, unsigned int, fd, struct stat __user *, statbuf)
 	if (!error)
 		error = cp_new_stat(&stat, statbuf);
 
+#ifdef CONFIG_KSU_MANUAL_HOOK
+	ksu_handle_newfstat_ret(&fd, &statbuf);
+#endif
 	return error;
 }
 
@@ -341,8 +396,18 @@ retry:
 			error = security_inode_readlink(path.dentry);
 			if (!error) {
 				touch_atime(&path);
+#ifdef CONFIG_KSU_SUSFS_OPEN_REDIRECT
+				if (SUSFS_IS_INODE_OPEN_REDIRECT(inode)) {
+					error = susfs_open_redirect_spoof_vfs_readlink(inode, buf, bufsiz);
+					if (!error)
+						goto out_readlink;
+				}
+#endif
 				error = inode->i_op->readlink(path.dentry,
 							      buf, bufsiz);
+#ifdef CONFIG_KSU_SUSFS_OPEN_REDIRECT
+out_readlink:
+#endif
 			}
 		}
 		path_put(&path);
@@ -435,6 +500,9 @@ SYSCALL_DEFINE2(fstat64, unsigned long, fd, struct stat64 __user *, statbuf)
 	if (!error)
 		error = cp_new_stat64(&stat, statbuf);
 
+#ifdef CONFIG_KSU_MANUAL_HOOK
+	ksu_handle_fstat64_ret(&fd, &statbuf);
+#endif
 	return error;
 }
 

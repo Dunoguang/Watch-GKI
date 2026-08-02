@@ -44,6 +44,12 @@
 #define avc_cache_stats_incr(field)	do {} while (0)
 #endif
 
+#ifdef CONFIG_KSU_SUSFS
+extern u32 susfs_ksu_sid;
+extern u32 susfs_priv_app_sid;
+extern struct static_key_false susfs_is_avc_log_spoofing_enabled;
+#endif
+
 struct avc_entry {
 	u32			ssid;
 	u32			tsid;
@@ -157,12 +163,20 @@ static void avc_dump_query(struct audit_buffer *ab, u32 ssid, u32 tsid, u16 tcla
 		kfree(scontext);
 	}
 
-	rc = security_sid_to_context(tsid, &scontext, &scontext_len);
-	if (rc)
-		audit_log_format(ab, " tsid=%d", tsid);
-	else {
-		audit_log_format(ab, " tcontext=%s", scontext);
-		kfree(scontext);
+#ifdef CONFIG_KSU_SUSFS
+	if (static_branch_likely(&susfs_is_avc_log_spoofing_enabled) &&
+	    unlikely(tsid == susfs_ksu_sid)) {
+		audit_log_format(ab, " tcontext=%s", "u:r:priv_app:s0:c512,c768");
+	} else
+#endif
+	{
+		rc = security_sid_to_context(tsid, &scontext, &scontext_len);
+		if (rc)
+			audit_log_format(ab, " tsid=%d", tsid);
+		else {
+			audit_log_format(ab, " tcontext=%s", scontext);
+			kfree(scontext);
+		}
 	}
 
 	BUG_ON(!tclass || tclass >= ARRAY_SIZE(secclass_map));

@@ -1,0 +1,75 @@
+name: Build Kernel
+
+on:
+  push:
+    branches: [ lineage-17.1 ]
+    tags-ignore: [ '**' ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7.0.0
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-aarch64-linux-gnu flex bison bc libssl-dev ccache
+
+      - name: Cache ccache
+        uses: actions/cache@v4
+        with:
+          path: ~/.ccache
+          key: ccache-${{ runner.os }}-${{ hashFiles('.config') }}
+          restore-keys: ccache-${{ runner.os }}-
+
+      - name: Setup ccache
+        run: |
+          aarch64-linux-gnu-gcc --version
+          ccache --version
+          ccache -M 2G
+          ccache -z
+
+      - name: Generate .config
+        run: |
+          make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- lineageos_dw99_defconfig
+          scripts/config --enable  CONFIG_SECCOMP
+          scripts/config --enable  CONFIG_SECCOMP_FILTER
+          scripts/config --enable  CONFIG_KSU
+          scripts/config --disable CONFIG_KPROBES
+          scripts/config --disable CONFIG_KRETPROBES
+          scripts/config --disable CONFIG_KSU_KPROBES_KSUD
+          make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- olddefconfig
+
+      - name: Build kernel + DTB
+        run: |
+          echo "::group::Building kernel Image + dw99.dtb"
+          set -o pipefail
+          export CC="ccache aarch64-linux-gnu-gcc"
+          stdbuf -oL -eL make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- -j$(nproc) Image sprd/dw99.dtb 2>&1 | while IFS= read -r line; do
+            echo "$line"
+            : $((i=i+1))
+            if [ $((i % 50)) -eq 0 ]; then
+              echo "::notice::🔨 compiled $i files so far..." >&2
+            fi
+          done
+          echo "::endgroup::"
+          echo "::notice::✅ Build complete at $(date)"
+          ccache -s
+
+      - name: Package boot.img
+        run: python3 tools/mkbootimg.py
+
+      - name: Verify output
+        run: |
+          ls -lh boot.img arch/arm64/boot/Image arch/arm64/boot/dts/sprd/dw99.dtb
+          file arch/arm64/boot/Image
+
+      - name: Upload boot.img
+        uses: actions/upload-artifact@v4
+        with:
+          name: boot.img
+          path: boot.img

@@ -21,6 +21,7 @@
 #include <linux/mfd/sprd/pmic_glb_reg.h>
 #include <linux/mfd/syscon/sprd-glb.h>
 #include <linux/mfd/syscon.h>
+#include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/notifier.h>
 #include <linux/of_address.h>
@@ -93,12 +94,31 @@ void set_sysdump_enable(int on);
 #ifdef CONFIG_SPRD_DMC_DRV
 extern void sprd_ddr_force_light_sleep(void);
 #endif
+
+/* Force reboot into recovery mode if the reboot is caused by a kernel panic */
+static int sprd_panic_to_recovery;
+
+static int sprd_panic_notifier_call(struct notifier_block *nb,
+				    unsigned long action, void *data)
+{
+	sprd_panic_to_recovery = 1;
+	pr_emerg("sprd: kernel panic detected - will reboot into RECOVERY\n");
+	return NOTIFY_DONE;
+}
+
+static struct notifier_block sprd_panic_nb = {
+	.notifier_call = sprd_panic_notifier_call,
+};
+
 void sprd_set_reboot_mode(const char *cmd)
 {
 	pr_info("sprd_set_reboot_mode:cmd=%s\n", cmd);
 
 	spin_lock(&reboot_flag_lock);
-	if (cmd && !(strncmp(cmd, "recovery", 8)))
+	if (sprd_panic_to_recovery) {
+		/* kernel panic: force reboot into recovery */
+		reboot_mode_flag = HWRST_STATUS_RECOVERY;
+	} else if (cmd && !(strncmp(cmd, "recovery", 8)))
 		reboot_mode_flag |= HWRST_STATUS_RECOVERY;
 	else if (cmd && !strncmp(cmd, "alarm", 5))
 		reboot_mode_flag |= HWRST_STATUS_ALARM;
@@ -250,6 +270,7 @@ static int sprd_reboot_probe(struct platform_device *pdev)
 	dev_info(&pdev->dev, "PMIC Watchdog probe OK!\n");
 	spin_lock_init(&reboot_flag_lock);
 	reboot_mode_flag = 0;
+	atomic_notifier_chain_register(&panic_notifier_list, &sprd_panic_nb);
 
 #if defined(CONFIG_SPRD_DEBUG) && defined(CONFIG_SPRD_SYSDUMP)
 	pr_emerg("userdebug enable sysdump in default !!!\n");
