@@ -75,3 +75,14 @@ scripts/kallsyms
 scripts/recordmcount
 scripts/conmakehash
 scripts/mod/modpost
+
+# ===== root build artifacts =====
+.config
+.config.old
+System.map
+.tmp_System.map
+.version
+.missing-syscalls.d
+boot.patched.img
+kernel.patched
+*.patched.img
