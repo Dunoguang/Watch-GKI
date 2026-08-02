@@ -5,20 +5,6 @@ on:
     branches: [ '**' ]
     tags-ignore: [ '**' ]
   workflow_dispatch:
-    inputs:
-      patch_method:
-        description: '选择补丁方式: ksu (编译进内核) 或 folkpatch (kptools 打补丁)'
-        required: true
-        default: 'ksu'
-        type: choice
-        options:
-          - ksu
-          - folkpatch
-      superkey:
-        description: 'FolkPatch superkey (仅 folkpatch 模式使用, 默认 su)'
-        required: false
-        default: 'su'
-        type: string
 
 jobs:
   build:
@@ -73,17 +59,10 @@ jobs:
           scripts/config --enable  CONFIG_SECCOMP
           scripts/config --enable  CONFIG_SECCOMP_FILTER
 
-          # Patch method switch: KSU (built into kernel) or FolkPatch (kptools post-patch)
-          if [ "${{ github.event.inputs.patch_method }}" = "folkpatch" ]; then
-            echo "::notice::🔧 FolkPatch mode selected (no CONFIG_KSU in kernel)"
-            echo "patch=folkpatch" >> "$GITHUB_OUTPUT"
-            scripts/config --disable CONFIG_KSU
-          else
-            echo "::notice::✅ KernelSU mode selected (default)"
-            echo "patch=ksu" >> "$GITHUB_OUTPUT"
-            scripts/config --enable  CONFIG_KSU
-            scripts/config --disable CONFIG_KSU_KPROBES_KSUD
-          fi
+          # KernelSU built into kernel
+          echo "::notice::✅ KernelSU mode (default)"
+          scripts/config --enable  CONFIG_KSU
+          scripts/config --disable CONFIG_KSU_KPROBES_KSUD
           scripts/config --disable CONFIG_KPROBES
           scripts/config --disable CONFIG_KRETPROBES
           make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- olddefconfig
@@ -98,17 +77,6 @@ jobs:
           echo "::endgroup::"
           echo "::notice::✅ Build complete at $(date)"
 
-      # FolkPatch: inject kpimg into kernel with x86 kptools (runner is x86_64)
-      - name: Patch kernel with FolkPatch (x86 kptools)
-        if: steps.config.outputs.patch == 'folkpatch'
-        run: |
-          echo "::group::FolkPatch patching kernel"
-          SK="${SUPERKEY:-su}"
-          cp arch/arm64/boot/Image kernel.ori
-          ./kptools-linux -p -i kernel.ori -S "$SK" -k kpimg -o kernel.patched
-          echo "::endgroup::"
-          echo "::notice::✅ FolkPatch applied, superkey=$SK"
-
       # Show ccache effectiveness after build
       - name: ccache stats
         run: |
@@ -119,11 +87,7 @@ jobs:
 
       - name: Package boot.img
         run: |
-          if [ "${{ steps.config.outputs.patch }}" = "folkpatch" ]; then
-            python3 tools/mkbootimg.py kernel.patched arch/arm64/boot/dts/sprd/dw99.dtb
-          else
-            python3 tools/mkbootimg.py
-          fi
+          python3 tools/mkbootimg.py
 
       - name: Verify output
         run: |
