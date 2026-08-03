@@ -203,7 +203,7 @@ static inline int erofs_wait_on_workgroup_freezed(struct erofs_workgroup *grp)
 #define LOG_SECTORS_PER_BLOCK	(PAGE_SHIFT - 9)
 
 #undef SECTORS_PER_BLOCK
-#define SECTORS_PER_BLOCK	(1 << SECTORS_PER_BLOCK)
+#define SECTORS_PER_BLOCK	(1 << LOG_SECTORS_PER_BLOCK)
 
 #define EROFS_BLKSIZ		(1 << LOG_BLOCK_SIZE)
 
