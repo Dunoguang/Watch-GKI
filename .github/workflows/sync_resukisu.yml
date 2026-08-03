@@ -2,8 +2,8 @@ name: Sync ReSukiSU upstream
 
 on:
   schedule:
-    - cron: '0 */6 * * *'      # 每 6 小时检查上游
-  workflow_dispatch:            # 手动触发
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -19,19 +19,18 @@ jobs:
           submodules: recursive
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Check ReSukiSU upstream for updates
+      - name: Check ReSukiSU upstream
         id: check
         run: |
           cd KernelSU
-          # 子模块 origin 已指向 fork（.gitmodules），另加 upstream 指向上游仓库
           git remote add upstream https://github.com/ReSukiSU/ReSukiSU.git 2>/dev/null || git remote set-url upstream https://github.com/ReSukiSU/ReSukiSU.git
           git fetch upstream main
           if git merge-base --is-ancestor upstream/main HEAD; then
-            echo "✓ sprd-4.4 已包含上游最新，无需更新"
             echo "UPDATED=false" >> $GITHUB_ENV
+            echo "no upstream update"
           else
-            echo "→ 上游有新提交，开始同步"
             echo "UPDATED=true" >> $GITHUB_ENV
+            echo "upstream has new commits"
           fi
 
       - name: Merge upstream main into sprd-4.4
@@ -41,18 +40,15 @@ jobs:
           cd KernelSU
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
-          # 在 gitlink 提交上建 sprd-4.4 分支
           git checkout -B sprd-4.4 HEAD
-          git merge upstream/main --no-edit 2>&1 | tail -8
+          git merge upstream/main --no-edit 2>&1 | tail -5 || true
           if git diff --name-only --diff-filter=U | grep -q .; then
-            echo "有冲突：$CONFLICTS"
-            git diff --name-only --diff-filter=U
             echo "MERGE_CONFLICT=true" >> $GITHUB_ENV
           else
             echo "MERGE_CONFLICT=false" >> $GITHUB_ENV
           fi
 
-      - name: Push sprd-4.4 to fork and bump gitlink (triggers build)
+      - name: Push sprd-4.4 and bump gitlink (triggers build)
         if: env.UPDATED == 'true' && env.MERGE_CONFLICT == 'false'
         run: |
           cd KernelSU
@@ -60,16 +56,12 @@ jobs:
           git push fork sprd-4.4
           cd ..
           git add KernelSU
-          git commit -m "submodule: sync ReSukiSU sprd-4.4 with upstream main
-
-Automatically synced by sync_resukisu workflow.
-New upstream: $(git -C KernelSU log -1 --format='%h %s' upstream/main)"
+          git commit -m "submodule: sync ReSukiSU sprd-4.4 with upstream main (auto)"
           git push origin resukisu
-          echo "✅ 已同步并推送，kernel build 将自动触发"
 
       - name: Conflict notice
         if: env.UPDATED == 'true' && env.MERGE_CONFLICT == 'true'
         run: |
-          echo "❌ ReSukiSU 同步冲突，需手动解决！"
-          echo "在 KernelSU 子模块执行: git fetch upstream main && git merge upstream/main"
-          echo "解决冲突后更新主仓库 gitlink 并推送 resukisu"
+          echo "ReSukiSU sync conflict, resolve manually"
+          echo "cd KernelSU && git fetch upstream main && git merge upstream/main"
+          echo "then bump gitlink and push resukisu"
