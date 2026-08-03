@@ -1,0 +1,159 @@
+diff --git a/kernel/Kbuild b/kernel/Kbuild
+index 4ac11d61..3314ef0d 100644
+--- a/kernel/Kbuild
++++ b/kernel/Kbuild
+@@ -139,41 +139,10 @@ ifeq ($(CONFIG_KSU),y)
+   endif
+ endif
+ 
+-ifdef CONFIG_KSU_TRACEPOINT_HOOK
+-  $(info -- $(REPO_NAME): using Tracepoint Syscall Redirect Hook)
+-
+-  ifndef CONFIG_KSU_DISABLE_MANAGER
+-    kernelsu-objs += manager/pkg_observer.o
+-  endif
+-
+-  kernelsu-objs += hook/syscall_hook_manager.o
+-  kernelsu-objs += hook/syscall_event_bridge.o
+-  kernelsu-objs += hook/tp_marker.o
+-  ifeq ($(CONFIG_ARM64),y)
+-    kernelsu-objs += hook/arm64/syscall_hook.o
+-  else ifeq ($(CONFIG_X86_64),y)
+-    kernelsu-objs += hook/x86_64/syscall_hook.o
+-  else
+-    ifeq ($(CONFIG_KSU), y)
+-      $(info -- Unsupported arch)
+-      $(info -- Only arm64-v8a and x86-64 support for tracepoint hook)
+-      $(error Unsupported arch for tracepoint hook)
+-    endif
+-  endif
+-  ifeq ($(CONFIG_KSU),y)
+-    ifneq ($(KERNEL_TYPE), GKI 2.0)
+-      $(info -- $(REPO_NAME) TP Hooks are only supported on GKI 2.0 kernels.)
+-      $(info -- Current Kernel Type: $(KERNEL_TYPE))
+-      $(info -- If you really want to continue, go to Kbuild and comment out this warning.)
+-      $(info -- Usually, this error occurs because you forgot to enable some kernel configurations.)
+-      $(info -- Read: https://resukisu.github.io/guide/manual-integrate.html)
+-      $(error TP hooks are incompatible with Non-GKI/GKI 1.0 kernels.)
+-    endif
+-  endif
+-
+-else ifdef CONFIG_KSU_MANUAL_HOOK
++ifdef CONFIG_KSU_MANUAL_HOOK
+   $(info -- $(REPO_NAME): using Manual Hook)
+   include $(KSU_SRC)/tools/manual_hook_check.mk
++  include $(KSU_SRC)/tools/susfs_compat.mk
+ else ifdef CONFIG_KSU_SUSFS
+   $(info -- $(REPO_NAME): using SuSFS Inline hook)
+   include $(KSU_SRC)/tools/inline_hook_check.mk
+@@ -193,7 +162,6 @@ else
+   endif
+ endif
+ 
+-ifndef CONFIG_KSU_TRACEPOINT_HOOK
+   # For old kernel, pkg observer maybe let system freeze
+   # https://github.com/ReSukiSU/ReSukiSU/issues/82#issuecomment-4015396974
+   #
+@@ -205,7 +173,6 @@ ifndef CONFIG_KSU_TRACEPOINT_HOOK
+     ifndef CONFIG_KSU_DISABLE_MANAGER
+       kernelsu-objs += manager/pkg_observer.o
+     endif
+-  endif
+ endif
+ 
+ include $(KSU_SRC)/tools/kernel_compat.mk
+diff --git a/kernel/Kconfig b/kernel/Kconfig
+index 45f87e42..7e63fc96 100644
+--- a/kernel/Kconfig
++++ b/kernel/Kconfig
+@@ -77,22 +77,6 @@ config KSU_MULTI_MANAGER_SUPPORT
+ 	help
+ 		Enable multi KernelSU manager support
+ 
+-choice
+-	prompt "KernelSU Hooking Method"
+-	depends on KSU
+-	default KSU_TRACEPOINT_HOOK
+-	help
+-	  Select the hooking method for KernelSU.
+-	  Note: Tracepoint Syscall Redirect hook is only supported for GKI2(5.10+)
+-
+-config KSU_TRACEPOINT_HOOK
+-	bool "Tracepoint Syscall Redirect"
+-	help
+-	  The standard, upstream method for modern kernels. 
+-	  Utilizes GKI tracepoints for syscall redirection. 
+-	  The implementation is only for devices with GKI2 support.
+-	  Support for kernel 5.10+
+-
+ config KSU_MANUAL_HOOK
+ 	bool "Manually hook KernelSU"
+ 	depends on KSU != m
+@@ -110,7 +94,6 @@ config KSU_SUSFS
+ 	  This KSU driver support it for 4.3+ in KSU side, 
+ 	  But the kernel side susfs compatibility MUST completed by yourself.
+ 
+-endchoice
+ 
+ menu "KernelSU - Manual Hook Auto hook"
+     depends on KSU_MANUAL_HOOK
+diff --git a/kernel/runtime/ksud_integration.c b/kernel/runtime/ksud_integration.c
+index 0bf3c695..1fcecce7 100644
+--- a/kernel/runtime/ksud_integration.c
++++ b/kernel/runtime/ksud_integration.c
+@@ -95,27 +95,6 @@ static void stop_execve_hook(void);
+         bool ret = schedule_work(&stop_input_hook_work);
+         pr_info("unregister input kprobe: %d!\n", ret);
+     }
+-#elif defined(CONFIG_KSU_SUSFS)
+-    DEFINE_STATIC_KEY_TRUE(ksu_is_init_rc_hook_enabled);
+-    DEFINE_STATIC_KEY_TRUE(ksu_is_input_hook_enabled);
+-
+-    // use define to avoid ifdef
+-    #define ksu_init_rc_hook_inactive() (!static_branch_likely(&ksu_is_init_rc_hook_enabled))
+-    #define ksu_input_hook_inactive() (!static_branch_likely(&ksu_is_input_hook_enabled))
+-
+-    static void stop_init_rc_hook(void)
+-    {
+-        if (static_key_enabled(&ksu_is_init_rc_hook_enabled))
+-            static_branch_disable(&ksu_is_init_rc_hook_enabled);
+-        pr_info("stop init_rc_hook!\n");
+-    }
+-
+-    static inline void stop_input_hook(void)
+-    {
+-        if (static_key_enabled(&ksu_is_input_hook_enabled))
+-            static_branch_disable(&ksu_is_input_hook_enabled);
+-    }
+-
+ #elif defined(CONFIG_KSU_MANUAL_HOOK)
+     #if defined(CONFIG_KSU_MANUAL_HOOK_AUTO_INITRC_HOOK) && defined(KSU_COMPAT_USE_STATIC_KEY)
+         DEFINE_STATIC_KEY_TRUE(ksu_init_rc_hook);
+@@ -166,6 +145,27 @@ static void stop_execve_hook(void);
+         #endif
+     #endif
+ 
++#elif defined(CONFIG_KSU_SUSFS)
++    DEFINE_STATIC_KEY_TRUE(ksu_is_init_rc_hook_enabled);
++    DEFINE_STATIC_KEY_TRUE(ksu_is_input_hook_enabled);
++
++    // use define to avoid ifdef
++    #define ksu_init_rc_hook_inactive() (!static_branch_likely(&ksu_is_init_rc_hook_enabled))
++    #define ksu_input_hook_inactive() (!static_branch_likely(&ksu_is_input_hook_enabled))
++
++    static void stop_init_rc_hook(void)
++    {
++        if (static_key_enabled(&ksu_is_init_rc_hook_enabled))
++            static_branch_disable(&ksu_is_init_rc_hook_enabled);
++        pr_info("stop init_rc_hook!\n");
++    }
++
++    static inline void stop_input_hook(void)
++    {
++        if (static_key_enabled(&ksu_is_input_hook_enabled))
++            static_branch_disable(&ksu_is_input_hook_enabled);
++    }
++
+ #else
+     #error "Unsupported hook type"
+ #endif

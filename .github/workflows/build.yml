@@ -26,6 +26,19 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Update ReSukiSU submodule to latest main
+        run: |
+          git -C KernelSU fetch origin main
+          git -C KernelSU checkout --detach origin/main
+          echo "ReSukiSU HEAD: $(git -C KernelSU log -1 --format='%h %s')"
+
+      - name: Apply ReSukiSU 4.4 customizations
+        run: |
+          # 应用 4.4 定制补丁（剥离 Tracepoint、SUSFS 解耦、Manual Hook 优先）
+          git -C KernelSU apply --whitespace=nowarn ../tools/patches/resukisu-4.4.patch
+          echo "✅ ReSukiSU 4.4 patch applied"
+          grep -n "CONFIG_KSU_MANUAL_HOOK" KernelSU/kernel/Kconfig | head -2
+
       - name: Install dependencies
         run: |
           sudo apt-get update
