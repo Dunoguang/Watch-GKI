@@ -86,11 +86,19 @@ jobs:
           # NOTE: CC is hard-coded in Makefile as $(CROSS_COMPILE)gcc (= overrides env),
           # so ccache MUST go into CROSS_COMPILE (?= respects env), not CC.
           export CROSS_COMPILE="ccache aarch64-linux-gnu-"
-          make ARCH=arm64 CROSS_COMPILE="ccache aarch64-linux-gnu-" -j$(nproc) Image sprd/dw99.dtb 2>&1
+          make ARCH=arm64 CROSS_COMPILE="ccache aarch64-linux-gnu-" -j$(nproc) Image sprd/dw99.dtb 2>&1 | tee /tmp/build.log
           echo "::endgroup::"
           echo "::notice::✅ Build complete at $(date)"
 
       # Show ccache effectiveness after build
+      - name: Report ReSukiSU version
+        run: |
+          VCODE=$(grep -oE "ReSukiSU version code: [0-9]+" /tmp/build.log | head -1 | awk '{print $NF}')
+          VNAME=$(grep -oE "ReSukiSU version name: .+" /tmp/build.log | head -1 | sed 's/.*name: //')
+          HOOK=$(grep -oE "ReSukiSU: using [A-Za-z ]+Hook" /tmp/build.log | head -1 | sed 's/.*using //')
+          { echo "## 🚀 ReSukiSU 版本"; echo ""; echo "- **Version code**: $VCODE"; echo "- **Version name**: $VNAME"; echo "- **Hook method**: $HOOK"; echo "- **Kernel**: $(grep -oE 'Kernel: [^ ]+' /tmp/build.log | head -1 | awk '{print $NF}')"; } >> "$GITHUB_STEP_SUMMARY"
+          echo "ReSukiSU vcode=$VCODE name=$VNAME hook=$HOOK"
+
       - name: ccache stats
         run: |
           ccache -s
