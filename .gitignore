@@ -86,3 +86,12 @@ System.map
 boot.patched.img
 kernel.patched
 *.patched.img
+
+# ===== Generated kernel build config =====
+include/config/auto.conf
+include/config/tristate.conf
+include/config/erofs/
+include/generated/autoconf.h
+include/generated/compile.h
+kernel/config_data.gz
+KernelSU/kernel/modules.builtin
