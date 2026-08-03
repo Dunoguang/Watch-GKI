@@ -1,4 +1,4 @@
-name: Sync ReSukiSU upstream
+name: Sync ReSukiSU submodule
 
 on:
   schedule:
@@ -9,60 +9,38 @@ permissions:
   contents: write
 
 jobs:
-  sync:
+  bump:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout resukisu
         uses: actions/checkout@v7.0.1
         with:
           ref: resukisu
-          submodules: recursive
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Check ReSukiSU upstream
-        id: check
+      - name: Fetch fork sprd-4.4 and compare gitlink
         run: |
-          cd KernelSU
-          git remote add upstream https://github.com/ReSukiSU/ReSukiSU.git 2>/dev/null || git remote set-url upstream https://github.com/ReSukiSU/ReSukiSU.git
-          git fetch --unshallow origin 2>/dev/null || true
-          git fetch upstream main --tags
-          if git merge-base --is-ancestor upstream/main HEAD; then
-            echo "UPDATED=false" >> $GITHUB_ENV
-            echo "no upstream update"
+          CURRENT=$(git ls-tree HEAD KernelSU | awk '{print $3}')
+          echo "current gitlink: $CURRENT"
+          # 读 fork 的 sprd-4.4（公开仓库，无需 token）
+          git ls-remote https://github.com/Dunoguang/ReSukiSU.git refs/heads/sprd-4.4 > /tmp/sprd_head
+          NEW=$(awk '{print $1}' /tmp/sprd_head)
+          echo "fork sprd-4.4:  $NEW"
+          echo "CURRENT=$CURRENT" >> $GITHUB_ENV
+          echo "NEW=$NEW" >> $GITHUB_ENV
+          if [ "$CURRENT" = "$NEW" ]; then
+            echo "gitlink 已最新，无需更新"
           else
-            echo "UPDATED=true" >> $GITHUB_ENV
-            echo "upstream has new commits"
+            echo "sprd-4.4 有更新 → 将 bump gitlink 触发构建"
           fi
 
-      - name: Merge upstream main into sprd-4.4
-        if: env.UPDATED == 'true'
-        id: merge
+      - name: Bump gitlink and push (triggers build)
+        if: env.CURRENT != env.NEW
         run: |
-          cd KernelSU
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
-          git checkout -B sprd-4.4 HEAD
-          git merge upstream/main --no-edit --allow-unrelated-histories 2>&1 | tail -5 || true
-          if git diff --name-only --diff-filter=U | grep -q .; then
-            echo "MERGE_CONFLICT=true" >> $GITHUB_ENV
-          else
-            echo "MERGE_CONFLICT=false" >> $GITHUB_ENV
-          fi
-
-      - name: Push sprd-4.4 and bump gitlink (triggers build)
-        if: env.UPDATED == 'true' && env.MERGE_CONFLICT == 'false'
-        run: |
-          cd KernelSU
-          git remote add fork https://x-access-token:${{ secrets.REPOS_TOKEN }}@github.com/Dunoguang/ReSukiSU.git 2>/dev/null || git remote set-url fork https://x-access-token:${{ secrets.REPOS_TOKEN }}@github.com/Dunoguang/ReSukiSU.git
-          git push fork sprd-4.4
-          cd ..
+          git -C KernelSU fetch https://github.com/Dunoguang/ReSukiSU.git sprd-4.4
+          git -C KernelSU checkout --detach ${{ env.NEW }}
           git add KernelSU
-          git commit -m "submodule: sync ReSukiSU sprd-4.4 with upstream main (auto)"
+          git commit -m "submodule: bump ReSukiSU sprd-4.4 to ${{ env.NEW }} (auto sync)"
           git push origin resukisu
-
-      - name: Conflict notice
-        if: env.UPDATED == 'true' && env.MERGE_CONFLICT == 'true'
-        run: |
-          echo "ReSukiSU sync conflict, resolve manually"
-          echo "cd KernelSU && git fetch upstream main && git merge upstream/main"
-          echo "then bump gitlink and push resukisu"
