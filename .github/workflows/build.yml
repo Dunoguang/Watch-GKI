@@ -99,8 +99,11 @@ jobs:
           VCODE=$(grep -oE "ReSukiSU version code: [0-9]+" /tmp/build.log | head -1 | awk '{print $NF}')
           VNAME=$(grep -oE "ReSukiSU version name: .+" /tmp/build.log | head -1 | sed 's/.*name: //')
           HOOK=$(grep -oE "ReSukiSU: using [A-Za-z ]+Hook" /tmp/build.log | head -1 | sed 's/.*using //')
-          { echo "## 🚀 ReSukiSU 版本"; echo ""; echo "- **Version code**: $VCODE"; echo "- **Version name**: $VNAME"; echo "- **Hook method**: $HOOK"; echo "- **Kernel**: $(grep -oE 'Kernel: [^ ]+' /tmp/build.log | head -1 | awk '{print $NF}')"; } >> "$GITHUB_STEP_SUMMARY"
-          echo "ReSukiSU vcode=$VCODE name=$VNAME hook=$HOOK"
+          SUSVER=$(grep -E '^#define SUSFS_VERSION' include/linux/susfs.h | cut -d'"' -f2)
+          { echo "## 🚀 ReSukiSU 版本"; echo ""; echo "- **Version code**: $VCODE"; echo "- **Version name**: $VNAME"; echo "- **Hook method**: $HOOK"; echo "- **SuSFS version**: $SUSVER"; echo "- **Kernel**: $(grep -oE 'Kernel: [^ ]+' /tmp/build.log | head -1 | awk '{print $NF}')"; } >> "$GITHUB_STEP_SUMMARY"
+          echo "ReSukiSU vcode=$VCODE name=$VNAME hook=$HOOK susver=$SUSVER"
+          echo "vcode=$VCODE" >> "$GITHUB_ENV"
+          echo "susver=$SUSVER" >> "$GITHUB_ENV"
 
       - name: ccache stats
         run: |
@@ -113,9 +116,17 @@ jobs:
         run: |
           python3 tools/mkbootimg.py
 
+      - name: Rename artifact (WGKI naming)
+        run: |
+          TS=$(TZ=Asia/Shanghai date +%Y%m%d%H%M%S)
+          ARTIFACT="WGKI-RSSU${vcode}-SuSFS${susver}-SAR-EROFS-ByDunoguang-${TS}"
+          mv boot.img "${ARTIFACT}.img"
+          echo "artifact=$ARTIFACT" >> "$GITHUB_ENV"
+          echo "::notice::✅ 产物: ${ARTIFACT}.img"
+
       - name: Verify output
         run: |
-          ls -lh boot.img arch/arm64/boot/Image arch/arm64/boot/dts/sprd/dw99.dtb
+          ls -lh ${artifact}.img arch/arm64/boot/Image arch/arm64/boot/dts/sprd/dw99.dtb
           file arch/arm64/boot/Image
 
       # Always save latest ccache state (per docs: always() + restore output key)
@@ -130,5 +141,5 @@ jobs:
       - name: Upload boot.img
         uses: actions/upload-artifact@v7.0.1
         with:
-          name: boot.img-${{ steps.config.outputs.patch }}
-          path: boot.img
+          name: ${{ env.artifact }}
+          path: ${{ env.artifact }}.img
