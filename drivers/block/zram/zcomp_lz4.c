@@ -45,16 +45,21 @@ static void zcomp_lz4_destroy(void *private)
 static int zcomp_lz4_compress(const unsigned char *src, unsigned char *dst,
 		size_t *dst_len, void *private)
 {
-	/* return  : Success if return 0 */
-	return lz4_compress(src, PAGE_SIZE, dst, dst_len, private);
+	int out_len = LZ4_compress_default(src, dst, PAGE_SIZE, PAGE_SIZE,
+					   private);
+
+	if (!out_len)
+		return -EINVAL;
+	*dst_len = out_len;
+	return 0;
 }
 
 static int zcomp_lz4_decompress(const unsigned char *src, size_t src_len,
 		unsigned char *dst)
 {
-	size_t dst_len = PAGE_SIZE;
-	/* return  : Success if return 0 */
-	return lz4_decompress_unknownoutputsize(src, src_len, dst, &dst_len);
+	int out_len = LZ4_decompress_safe(src, dst, src_len, PAGE_SIZE);
+
+	return out_len < 0 ? -EINVAL : 0;
 }
 
 struct zcomp_backend zcomp_lz4 = {
