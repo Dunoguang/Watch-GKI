@@ -79,6 +79,7 @@ void __sync_icache_dcache(pte_t pte, unsigned long addr)
 		__flush_dcache_area(page_address(page),
 				PAGE_SIZE << compound_order(page));
 		__flush_icache_all();
+	}
 }
 
 /*
