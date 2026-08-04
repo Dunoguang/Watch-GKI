@@ -435,7 +435,6 @@ static int selinux_is_sblabel_mnt(struct super_block *sb)
 	default:
 		return 0;
 	}
->>>>>>> selinux: never allow relabeling on context mounts
 }
 
 static int sb_finish_set_opts(struct super_block *sb)

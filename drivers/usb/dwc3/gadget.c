@@ -3194,13 +3194,14 @@ int dwc3_gadget_resume(struct dwc3 *dwc)
 
 	if (!dwc->gadget_driver)
 		return 0;
-<<<<<<< HEAD
-=======
+	/* Start with SuperSpeed Default */
+	dwc3_gadget_ep0_desc.wMaxPacketSize = cpu_to_le16(512);
 
-	/* Start with SuperSpeed Default */
-	dwc3_gadget_ep0_desc.wMaxP
-	/* Start with SuperSpeed Default */
-	dwc3_gadget_ep0_desc.wMaxPacketSize = cpu_to_le16(512);stop(dwc, true, false);
+	ret = __dwc3_gadget_start(dwc);
+	if (ret < 0)
+		goto err0;
+
+	ret = dwc3_gadget_run_stop(dwc, true, false);
 	if (ret < 0)
 		goto err1;
 
