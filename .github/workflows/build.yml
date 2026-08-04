@@ -28,6 +28,9 @@ jobs:
 
       - name: Update ReSukiSU submodule to latest main
         run: |
+          # 修复: submodule 的 .git 是文件(gitdir 指针), Kbuild 的 shallow 自救逻辑失效,
+          # 必须手动 unshallow, 否则 rev-list --count 恒为 1 -> version code 恒 30701
+          git -C KernelSU fetch --unshallow origin
           git -C KernelSU fetch origin main
           git -C KernelSU checkout --detach origin/main
           echo "ReSukiSU HEAD: $(git -C KernelSU log -1 --format='%h %s')"
