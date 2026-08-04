@@ -143,3 +143,27 @@ jobs:
         with:
           name: ${{ env.artifact }}
           path: ${{ env.artifact }}.img
+
+      # 参考 Re-Vibe-Launcher: 同时上传 Tempfile, 无论构建成败都执行, 失败不阻断
+      - name: ☁️ 上传到 Tempfile (无论成败)
+        if: always()
+        continue-on-error: true
+        run: |
+          FILE="${artifact}.img"
+          if [ ! -f "$FILE" ]; then
+            echo "⚠️ 产物不存在 (${FILE})，跳过 Tempfile 上传" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          echo "📤 上传 ${FILE} 到 Tempfile..."
+          RESP=$(curl -sS -X POST https://tempfile.org/api/upload/local \
+            -F "files=@${FILE}" -F "expiryHours=48")
+          URL=$(echo "$RESP" | python3 -c "import sys,json; print(json.load(sys.stdin)['files'][0]['url'] + 'download')")
+          cat >> "$GITHUB_STEP_SUMMARY" << EOF
+          ## ☁️ Tempfile 下载
+          | 📦 产物 | 🔗 链接 | 📏 大小 | ⏰ 有效期 |
+          |---------|---------|---------|-----------|
+          | ${FILE} | [点击下载](${URL}) | $(du -h "$FILE" | cut -f1) | 48 小时 |
+
+          > \`${URL}\`
+          EOF
+          echo "TEMP_URL=${URL}"
