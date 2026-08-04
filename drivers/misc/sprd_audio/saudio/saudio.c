@@ -1246,8 +1246,11 @@ static void saudio_snd_wait_modem_restart(struct snd_saudio *saudio)
 					   dev_ctrl->monitor_channel,
 					   SAUDIO_CMD_HANDSHAKE, 0, -1);
 		if (result) {
-			schedule_timeout_interruptible(msecs_to_jiffies(1000));
-			pr_err("saudio_wait_monitor_cmd error %d\n", result);
+			/* CP audio service not up yet - normal during boot,
+			 * retry at low rate instead of spamming error logs
+			 */
+			schedule_timeout_interruptible(msecs_to_jiffies(5000));
+			pr_warn("saudio_wait_monitor_cmd: retry %d\n", result);
 			continue;
 		} else {
 			while (1) {
@@ -1258,10 +1261,10 @@ static void saudio_snd_wait_modem_restart(struct snd_saudio *saudio)
 						0, 0, -1);
 				if (!result)
 					break;
-				pr_err("saudio_send_monitor_cmd error %d\n",
+				pr_warn("saudio_send_monitor_cmd: retry %d\n",
 					result);
 				schedule_timeout_interruptible(
-					msecs_to_jiffies(1000));
+					msecs_to_jiffies(5000));
 			}
 		}
 		break;
