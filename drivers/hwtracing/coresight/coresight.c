@@ -590,7 +590,7 @@ static void coresight_fixup_device_conns(struct coresight_device *csdev)
 			} else {
 				csdev->orphan = true;
 				conn->child_dev = NULL;
-			}'
+			}
 		} else {
 			dev = bus_find_device(&coresight_bustype, NULL,
 						  (void *)conn->parent_name,
