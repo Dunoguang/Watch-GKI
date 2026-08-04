@@ -100,7 +100,7 @@ jobs:
           VNAME=$(grep -oE "ReSukiSU version name: .+" /tmp/build.log | head -1 | sed 's/.*name: //')
           HOOK=$(grep -oE "ReSukiSU: using [A-Za-z ]+Hook" /tmp/build.log | head -1 | sed 's/.*using //')
           SUSVER=$(grep -E '^#define SUSFS_VERSION' include/linux/susfs.h | cut -d'"' -f2)
-          { echo "## 🚀 ReSukiSU 版本"; echo ""; echo "- **Version code**: $VCODE"; echo "- **Version name**: $VNAME"; echo "- **Hook method**: $HOOK"; echo "- **SuSFS version**: $SUSVER"; echo "- **Kernel**: $(grep -oE 'Kernel: [^ ]+' /tmp/build.log | head -1 | awk '{print $NF}')"; } >> "$GITHUB_STEP_SUMMARY"
+          { echo "## 🚀 ReSukiSU 版本"; echo ""; echo "- **Version code**: $VCODE"; echo "- **Version name**: $VNAME"; echo "- **Hook method**: $HOOK"; echo "- **SuSFS version**: $SUSVER"; echo "- **Kernel**: $(grep -oE 'KERNEL_VERSION: [^ ]+' /tmp/build.log | head -1 | awk '{print $NF}')"; } >> "$GITHUB_STEP_SUMMARY"
           echo "ReSukiSU vcode=$VCODE name=$VNAME hook=$HOOK susver=$SUSVER"
           echo "vcode=$VCODE" >> "$GITHUB_ENV"
           echo "susver=$SUSVER" >> "$GITHUB_ENV"
