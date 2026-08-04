@@ -76,6 +76,12 @@ int fscrypt_ioctl_set_policy(struct file *filp, const void __user *arg)
 
 	inode_lock(inode);
 
+	if (IS_DEADDIR(inode)) {
+		inode_unlock(inode);
+		mnt_drop_write_file(filp);
+		return -ENOENT;
+	}
+
 	ret = inode->i_sb->s_cop->get_context(inode, &ctx, sizeof(ctx));
 	if (ret == -ENODATA) {
 		if (!S_ISDIR(inode->i_mode))
