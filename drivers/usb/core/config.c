@@ -227,6 +227,8 @@ static int usb_parse_endpoint(struct device *ddev, int cfgno,
 	struct usb_endpoint_descriptor *d;
 	struct usb_host_endpoint *endpoint;
 	int n, i, j, retval;
+	unsigned int maxp;
+	const unsigned short *maxpacket_maxes;
 
 	d = (struct usb_endpoint_descriptor *) buffer;
 	buffer += d->bLength;

@@ -530,6 +530,7 @@ void __handle_sysrq(int key, bool check_mask)
 {
 	struct sysrq_key_op *op_p;
 	int i;
+	int orig_log_level;
 
 	rcu_sysrq_start();
 	rcu_read_lock();
