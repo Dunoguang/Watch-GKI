@@ -60,7 +60,7 @@ struct.pack_into('<I', hdr, 32, TAGS_ADDR)
 struct.pack_into('<I', hdr, 36, PAGE_SIZE)
 struct.pack_into('<I', hdr, 40, dt_sz)       # SPRD dt_size field
 struct.pack_into('<I', hdr, 44, UNK2)
-cmdline = b'buildvariant=userdebug'
+cmdline = b'buildvariant=userdebug androidboot.super_partition=super androidboot.dynamic_partitions=1 firmware_class.path=/vendor/firmware'
 hdr[64:64+len(cmdline)] = cmdline
 
 # Write boot.img
