@@ -21,6 +21,7 @@
 #include <linux/sched.h>
 #include <linux/seccomp.h>
 #include <linux/slab.h>
+#include <linux/bitops.h>
 #include <linux/syscalls.h>
 
 #ifdef CONFIG_HAVE_ARCH_SECCOMP_FILTER
@@ -56,8 +57,20 @@
  * seccomp_filter objects should never be modified after being attached
  * to a task_struct (other than @usage).
  */
+/*
+ * KernelSU: seccomp action cache (backported from KernelSU 5.10+ patch).
+ * Whitelists syscalls (e.g. __NR_reboot) for authorized processes
+ * without tearing down their seccomp filters, keeping Seccomp: 2 visible.
+ * On non-KSU kernels the bitmap stays all-zero, so behaviour is unchanged.
+ */
+#define SECCOMP_ARCH_NATIVE_NR 512
+struct action_cache {
+	DECLARE_BITMAP(allow_native, SECCOMP_ARCH_NATIVE_NR);
+};
+
 struct seccomp_filter {
 	atomic_t usage;
+	struct action_cache cache;
 	struct seccomp_filter *prev;
 	struct bpf_prog *prog;
 };
@@ -202,7 +215,12 @@ static u32 seccomp_run_filters(const struct seccomp_data *sd)
 	 * value always takes priority (ignoring the DATA).
 	 */
 	for (; f; f = f->prev) {
-		u32 cur_ret = BPF_PROG_RUN(f->prog, (void *)sd);
+		u32 cur_ret;
+		if (sd->nr < SECCOMP_ARCH_NATIVE_NR &&
+		    test_bit(sd->nr, f->cache.allow_native))
+			cur_ret = SECCOMP_RET_ALLOW;
+		else
+			cur_ret = BPF_PROG_RUN(f->prog, (void *)sd);
 
 		if ((cur_ret & SECCOMP_RET_ACTION) < (ret & SECCOMP_RET_ACTION))
 			ret = cur_ret;

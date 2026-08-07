@@ -157,3 +157,70 @@ index 0bf3c695..1fcecce7 100644
  #else
      #error "Unsupported hook type"
  #endif
+diff --git a/kernel/hook/setuid_hook.c b/kernel/hook/setuid_hook.c
+index 43f7ce46..ee3f98b4 100644
+--- a/kernel/hook/setuid_hook.c
++++ b/kernel/hook/setuid_hook.c
+@@ -125,7 +125,11 @@ int ksu_handle_setuid(uid_t new_uid, uid_t old_uid)
+ 
+ #else // #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0)
+     if (ksu_is_allow_uid_for_current(new_uid)) {
+-        disable_seccomp();
++        if (current->seccomp.mode == SECCOMP_MODE_FILTER && current->seccomp.filter) {
++            spin_lock_irq(&current->sighand->siglock);
++            ksu_seccomp_allow_cache(current->seccomp.filter, __NR_reboot);
++            spin_unlock_irq(&current->sighand->siglock);
++        }
+ #ifndef CONFIG_KSU_TRACEPOINT_HOOK
+         ksu_clear_current_proc_unprivillege();
+ #endif
+diff --git a/kernel/infra/seccomp_cache.c b/kernel/infra/seccomp_cache.c
+index 56ec5e54..c3463f5f 100644
+--- a/kernel/infra/seccomp_cache.c
++++ b/kernel/infra/seccomp_cache.c
+@@ -1,14 +1,19 @@
+ #include <linux/version.h>
+ 
+-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0)
++#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0) || \
++    LINUX_VERSION_CODE < KERNEL_VERSION(5, 0, 0))
+ #include <linux/fs.h>
+-#include <linux/sched/task.h>
++#include <linux/sched.h>
++#include <linux/atomic.h>
+ #include <linux/uaccess.h>
+ #include <linux/filter.h>
+ #include <linux/seccomp.h>
+ #include "klog.h" // IWYU pragma: keep
+ #include "infra/seccomp_cache.h"
+ 
++#ifndef SECCOMP_ARCH_NATIVE_NR
++#define SECCOMP_ARCH_NATIVE_NR 512
++#endif
+ struct action_cache {
+     DECLARE_BITMAP(allow_native, SECCOMP_ARCH_NATIVE_NR);
+ #ifdef SECCOMP_ARCH_COMPAT
+@@ -16,6 +21,15 @@ struct action_cache {
+ #endif
+ };
+ 
++#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 0, 0)
++/* 4.x layout: matches kernel/seccomp.c patched struct */
++struct seccomp_filter {
++    atomic_t usage;
++    struct action_cache cache;
++    struct seccomp_filter *prev;
++    struct bpf_prog *prog;
++};
++#else
+ struct seccomp_filter {
+     refcount_t refs;
+     refcount_t users;
+@@ -30,6 +44,7 @@ struct seccomp_filter {
+     struct mutex notify_lock;
+     wait_queue_head_t wqh;
+ };
++#endif
+ 
+ void ksu_seccomp_clear_cache(struct seccomp_filter *filter, int nr)
+ {
