@@ -60,8 +60,13 @@ struct.pack_into('<I', hdr, 32, TAGS_ADDR)
 struct.pack_into('<I', hdr, 36, PAGE_SIZE)
 struct.pack_into('<I', hdr, 40, dt_sz)       # SPRD dt_size field
 struct.pack_into('<I', hdr, 44, UNK2)
-cmdline = b'buildvariant=userdebug androidboot.super_partition=super androidboot.dynamic_partitions=1 firmware_class.path=/vendor/firmware'
-hdr[64:64+len(cmdline)] = cmdline
+# NOTE: boot.img header cmdline is NOT used on arm64 - kernel only takes
+# cmdline from DTB chosen/bootargs (drivers/of/fdt.c, concat_cmdline=0),
+# so the header cmdline would be silently discarded. All boot args have been
+# migrated to arch/arm64/boot/dts/sprd/dw99.dts -> chosen/bootargs:
+#   androidboot.super_partition=super androidboot.dynamic_partitions=1
+#   firmware_class.path=/vendor/firmware
+# (commit ca78041a32db)
 
 # Write boot.img
 with open(OUT, 'wb') as f:
