@@ -128,13 +128,20 @@ static int load_fstab_conf(const char *p_path, char *WCN_PATH)
 		return -1;
 }
 
-static int prefixcmp(const char *str, const char *prefix)
+static int prefixcmp(const char *str, int namlen, const char *prefix)
 {
-	for (; ; str++, prefix++)
+	int i;
+
+	/* compare only within namlen; name may not be NUL-terminated
+	 * (erofs inline dirent, ext4 block dirent)
+	 */
+	for (i = 0; i < namlen; i++, str++, prefix++)
 		if (!*prefix)
 			return 0;
 		else if (*str != *prefix)
 			return (unsigned char)*prefix - (unsigned char)*str;
+
+	return *prefix ? 1 : 0;
 }
 
 static int find_callback(struct dir_context *ctx, const char *name, int namlen,
@@ -142,12 +149,15 @@ static int find_callback(struct dir_context *ctx, const char *name, int namlen,
 {
 	int tmp;
 
-	tmp = prefixcmp(name, prefix);
+	if (namlen <= 0)
+		return 0;
+
+	tmp = prefixcmp(name, namlen, prefix);
 	if (tmp == 0) {
 		if (strcmp(fstab_name, fstab_base) != 0)
 			return 0;
-		if (sizeof(fstab_name) > strlen(fstab_name) + strlen(name) + 2)
-			strcat(fstab_name, name);
+		if (sizeof(fstab_name) > strlen(fstab_name) + namlen + 2)
+			strncat(fstab_name, name, namlen);
 		WCN_INFO("full fstab name %s\n", fstab_name);
 	}
 
@@ -195,5 +205,13 @@ int parse_firmware_path(char *firmware_path)
 		return 0;
 	}
 
-	return ret;
+	/*
+	 * Fallback: standard Android by-name partition link.  This works
+	 * regardless of the /vendor filesystem type (ext4 or erofs) and keeps
+	 * the trailing "wcnmodem" so the GNSS path derivation (parent path +
+	 * gpsgl/gpsbd) in wcn_integrate_boot.c keeps working.
+	 */
+	strcpy(firmware_path, "/dev/block/by-name/wcnmodem");
+	WCN_INFO("fallback firmware path %s\n", firmware_path);
+	return 0;
 }

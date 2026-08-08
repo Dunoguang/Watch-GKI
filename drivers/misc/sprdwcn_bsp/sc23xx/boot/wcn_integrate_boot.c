@@ -981,17 +981,23 @@ int start_integrate_wcn(u32 subsys)
 			wcn_set_nognss(WCN_INTERNAL_INCLUD_GNSS_VAL);
 			wcn_clear_ddr_gnss_cali_bit();
 			ret = start_integrate_wcn_truely(WCN_GNSS);
+			/* GNSS calibration failure should not block WiFi */
 			if (ret) {
-				mutex_unlock(&marlin_lock);
-				return ret;
+				WCN_ERR("gnss calibration failed (ret=%d), "
+					"continue to start wifi anyway\n", ret);
+				/* Tell CP firmware that GNSS is not available,
+				 * otherwise CP will hang waiting for GNSS init.
+				 */
+				wcn_set_nognss(WCN_INTERNAL_NOINCLUD_GNSS_VAL);
 			}
+			/* else: ret==0, GNSS started OK, will stop below */
 		} else {
 			wcn_set_nognss(WCN_INTERNAL_NOINCLUD_GNSS_VAL);
 			WCN_INFO("not include gnss\n");
 		}
 
 		/* after cali,gnss powerdown itself,AP sync state by stop op */
-		if (s_wcn_device.gnss_device)
+		if (s_wcn_device.gnss_device && !ret)
 			stop_integrate_wcn_truely(WCN_GNSS);
 		first_time = 1;
 
