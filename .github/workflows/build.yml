@@ -119,7 +119,7 @@ jobs:
       - name: Rename artifact (WGKI naming)
         run: |
           TS=$(TZ=Asia/Shanghai date +%Y%m%d%H%M%S)
-          ARTIFACT="WGKI-RSSU${vcode}-SuSFS${susver}-SAR-EROFS-ByDunoguang-${TS}"
+          ARTIFACT="WGKI-RSSU${vcode}-SuSFS${susver}-SAR-DM-EROFS-ByDunoguang-${TS}"
           mv boot.img "${ARTIFACT}.img"
           echo "artifact=$ARTIFACT" >> "$GITHUB_ENV"
           echo "::notice::✅ 产物: ${ARTIFACT}.img"
