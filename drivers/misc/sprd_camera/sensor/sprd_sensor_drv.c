@@ -286,10 +286,6 @@ static int sprd_sensor_probe(struct i2c_client *client,
 		s_sensor_dev_data[SPRD_SENSOR_MAIN_ID_E] = pdata;
 	} else if (of_device_is_compatible(dev->of_node, "sprd,sensor-sub")) {
 		pdata->sensor_id = SPRD_SENSOR_SUB_ID_E;
-		/* DW99: no physical sub sensor; reuse main's I2C address so
-		 * HAL probe sees the same device as a virtual front camera
-		 */
-		client->addr = 0x20;
 		ret = sprd_sensor_config(dev, pdata);
 		s_sensor_dev_data[SPRD_SENSOR_SUB_ID_E] = pdata;
 	} else if (of_device_is_compatible(dev->of_node, "sprd,sensor-main2")) {

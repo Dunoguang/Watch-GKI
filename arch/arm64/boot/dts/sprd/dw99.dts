@@ -237,9 +237,9 @@
 					};
 				};
 
-				sensor-sub@21 {
+				sensor-sub@20 {
 					compatible = "sprd,sensor-sub";
-					reg = <0x21>;
+					reg = <0x20>;
 					clock-names = "clk_src\0sensor_eb\0clk_96m\0clk_76m8\0clk_48m\0clk_26m";
 					clocks = <0x07 0x08 0x01 0x09 0x0a 0x0b 0x05>;
 					vddio-supply = <0x0c>;
@@ -248,7 +248,7 @@
 					vddcammot-supply = <0x0f>;
 					reset-gpios = <0x10 0x2c 0x00>;
 					power-down-gpios = <0x10 0x2e 0x00>;
-					host = "dcam0";
+					host = "dcam1";
 
 					port {
 
