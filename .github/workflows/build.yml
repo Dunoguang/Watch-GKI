@@ -90,9 +90,12 @@ jobs:
             scripts/config --disable CONFIG_KPROBES
             scripts/config --disable CONFIG_KRETPROBES
           else
-            # 手动选择不编入：只关 CONFIG_KSU，SUSFS 等嵌套项由 olddefconfig 自动清掉
+            # 手动选择不编入：KSU_SUSFS/MANUAL_HOOK 的 depends 不含 KSU，
+            # olddefconfig 清不掉，必须显式 disable（SUSFS 子项/MULTI_MANAGER 会连锁清除）
             echo "::notice::🚫 不编入 ReSukiSU + SuSFS (manual dispatch)"
             scripts/config --disable CONFIG_KSU
+            scripts/config --disable CONFIG_KSU_MANUAL_HOOK
+            scripts/config --disable CONFIG_KSU_SUSFS
           fi
           make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- olddefconfig
 
@@ -102,6 +105,7 @@ jobs:
           # NOTE: CC is hard-coded in Makefile as $(CROSS_COMPILE)gcc (= overrides env),
           # so ccache MUST go into CROSS_COMPILE (?= respects env), not CC.
           export CROSS_COMPILE="ccache aarch64-linux-gnu-"
+          set -o pipefail  # make 失败时管道退出码不再被 tee 吞掉
           make ARCH=arm64 CROSS_COMPILE="ccache aarch64-linux-gnu-" -j$(nproc) Image sprd/dw99.dtb 2>&1 | tee /tmp/build.log
           echo "::endgroup::"
           echo "::notice::✅ Build complete at $(date)"
