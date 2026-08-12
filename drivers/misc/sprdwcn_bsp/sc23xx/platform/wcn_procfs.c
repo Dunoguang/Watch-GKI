@@ -66,17 +66,14 @@ static struct mdbg_proc_t *mdbg_proc;
 
 void mdbg_assert_interface(char *str)
 {
-	int len = MDBG_ASSERT_SIZE;
 
-	if (strlen(str) <= MDBG_ASSERT_SIZE)
-		len = strlen(str);
 #ifndef CONFIG_SC2342_INTEG
 	if (flag_reset == 1) {
 		WCN_INFO("chip in reset...\n");
 		return;
 	}
 #endif
-	strncpy(mdbg_proc->assert.buf, str, len);
+	strlcpy(mdbg_proc->assert.buf, str, MDBG_ASSERT_SIZE);
 	WCN_INFO("mdbg_assert_interface:%s\n",
 		(char *)(mdbg_proc->assert.buf));
 
