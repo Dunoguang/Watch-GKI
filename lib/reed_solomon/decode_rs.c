@@ -24,6 +24,8 @@
 	int fcr = rs->fcr;
 	int prim = rs->prim;
 	int iprim = rs->iprim;
+	if (nroots < 0)
+		return -1;
 	uint16_t *alpha_to = rs->alpha_to;
 	uint16_t *index_of = rs->index_of;
 	uint16_t u, q, tmp, num1, num2, den, discr_r, syn_error;

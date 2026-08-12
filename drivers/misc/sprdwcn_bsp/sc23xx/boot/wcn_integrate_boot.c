@@ -388,8 +388,15 @@ static int wcn_load_firmware_data(struct wcn_device *wcn_dev)
 	}
 	is_gnss = wcn_dev_is_gnss(wcn_dev);
 	if (is_gnss) {
-		strcpy(wcn_dev->firmware_path, gnss_firmware_parent_path);
-		strcat(wcn_dev->firmware_path, wcn_dev->firmware_path_ext);
+		{
+			size_t plen = strlen(gnss_firmware_parent_path);
+			size_t elen = strlen(wcn_dev->firmware_path_ext);
+			if (plen + elen < sizeof(wcn_dev->firmware_path)) {
+				memcpy(wcn_dev->firmware_path, gnss_firmware_parent_path, plen);
+				memcpy(wcn_dev->firmware_path + plen, wcn_dev->firmware_path_ext, elen);
+				wcn_dev->firmware_path[plen + elen] = '\0';
+			}
+		}
 		WCN_INFO("gnss path=%s\n", wcn_dev->firmware_path);
 		gnss_file_path_set(wcn_dev->firmware_path);
 	}

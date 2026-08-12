@@ -587,13 +587,13 @@ extern __attribute__((cold)) void ksu_handle_sys_read(unsigned int fd);
 
 SYSCALL_DEFINE3(read, unsigned int, fd, char __user *, buf, size_t, count)
 {
+	struct fd f = fdget_pos(fd);
+	ssize_t ret = -EBADF;
+
 #if defined(CONFIG_KSU_SUSFS) && !defined(CONFIG_KSU_MANUAL_HOOK)
 	if (static_branch_unlikely(&ksu_is_init_rc_hook_enabled))
 		ksu_handle_sys_read(fd);
 #endif
-
-	struct fd f = fdget_pos(fd);
-	ssize_t ret = -EBADF;
 
 	if (f.file) {
 		loff_t pos = file_pos_read(f.file);
