@@ -132,9 +132,9 @@ static int iodebug_update_vfs_io(struct vfs_iodebug_info *iodebug_info,
 	if (iodebug_info->pid == 0) {
 		memset(iodebug_info, 0, sizeof(struct vfs_iodebug_info));
 		iodebug_info->pid = current->pid;
-		strncpy(iodebug_info->name,
+		strscpy(iodebug_info->name,
 			current->group_leader->comm,
-			sizeof(iodebug_info->name) - 1);
+			sizeof(iodebug_info->name));
 		g_vfs_io_buffer_cnt++;
 	}
 
