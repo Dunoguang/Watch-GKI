@@ -109,16 +109,13 @@ static int load_fstab_conf(const char *p_path, char *WCN_PATH)
 		if (p_name != NULL) {
 			temp = strstr(p_name, "userdata");
 			if (temp != NULL) {
-				{
-					size_t plen = strlen(p_name);
-					if (plen >= sizeof(WCN_PATH))
-						plen = sizeof(WCN_PATH) - 1;
-					memmove(WCN_PATH, p_name, plen);
-					WCN_PATH[plen] = '\0';
-				}
-				WCN_PATH[strlen(WCN_PATH) - strlen(temp)]
-					= '\0';
-				strlcat(WCN_PATH, "wcnmodem", sizeof(WCN_PATH));
+				/* WCN_PATH is a char* (no sizeof); copy prefix up to
+				 * "userdata" then append "wcnmodem" — no overlap, no
+				 * -Wrestrict. buffer is FIRMWARE_FILEPATHNAME_LENGTH_MAX
+				 */
+				size_t plen = strlen(p_name) - strlen(temp);
+				memcpy(WCN_PATH, p_name, plen);
+				memcpy(WCN_PATH + plen, "wcnmodem", sizeof("wcnmodem"));
 				match_flag = true;
 				break;
 			}
