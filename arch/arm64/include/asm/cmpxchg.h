@@ -17,6 +17,11 @@
  */
 #ifndef __ASM_CMPXCHG_H
 #define __ASM_CMPXCHG_H
+#if __GNUC__ >= 12
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Warray-bounds"
+#endif
+
 
 #include <linux/bug.h>
 
@@ -224,4 +229,7 @@ __CMPXCHG_GEN(_mb)
 	__ret;								\
 })
 
+#if __GNUC__ >= 12
+#pragma GCC diagnostic pop
+#endif
 #endif	/* __ASM_CMPXCHG_H */
