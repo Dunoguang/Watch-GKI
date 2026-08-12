@@ -509,11 +509,11 @@ static int uhid_dev_create2(struct uhid_device *uhid,
 	}
 
 	len = min(sizeof(hid->name), sizeof(ev->u.create2.name)) - 1;
-	strncpy(hid->name, ev->u.create2.name, len);
+	strscpy(hid->name, ev->u.create2.name, len + 1);
 	len = min(sizeof(hid->phys), sizeof(ev->u.create2.phys)) - 1;
-	strncpy(hid->phys, ev->u.create2.phys, len);
+	strscpy(hid->phys, ev->u.create2.phys, len + 1);
 	len = min(sizeof(hid->uniq), sizeof(ev->u.create2.uniq)) - 1;
-	strncpy(hid->uniq, ev->u.create2.uniq, len);
+	strscpy(hid->uniq, ev->u.create2.uniq, len + 1);
 
 	hid->ll_driver = &uhid_hid_driver;
 	hid->bus = ev->u.create2.bus;
