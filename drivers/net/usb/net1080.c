@@ -30,6 +30,11 @@
 #include <linux/slab.h>
 
 #include <asm/unaligned.h>
+#if __GNUC__ >= 12
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Waddress-of-packed-member"
+#endif
+
 
 
 /*
@@ -542,3 +547,7 @@ module_usb_driver(net1080_driver);
 MODULE_AUTHOR("David Brownell");
 MODULE_DESCRIPTION("NetChip 1080 based USB Host-to-Host Links");
 MODULE_LICENSE("GPL");
+
+#if __GNUC__ >= 12
+#pragma GCC diagnostic pop
+#endif

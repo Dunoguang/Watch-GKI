@@ -22,6 +22,11 @@
 
 #include <linux/compat.h>
 #include <linux/slab.h>
+#if __GNUC__ >= 12
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Waddress-of-packed-member"
+#endif
+
 
 static int snd_pcm_ioctl_delay_compat(struct snd_pcm_substream *substream,
 				      s32 __user *src)
@@ -740,3 +745,7 @@ static long snd_pcm_ioctl_compat(struct file *file, unsigned int cmd, unsigned l
 
 	return -ENOIOCTLCMD;
 }
+
+#if __GNUC__ >= 12
+#pragma GCC diagnostic pop
+#endif

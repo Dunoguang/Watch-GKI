@@ -31,6 +31,11 @@
 #include <net/ipv6.h>
 #include <asm/uaccess.h>
 #include <net/compat.h>
+#if __GNUC__ >= 12
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpacked-not-aligned"
+#endif
+
 
 int get_compat_msghdr(struct msghdr *kmsg,
 		      struct compat_msghdr __user *umsg,
@@ -862,3 +867,7 @@ COMPAT_SYSCALL_DEFINE2(socketcall, int, call, u32 __user *, args)
 	}
 	return ret;
 }
+
+#if __GNUC__ >= 12
+#pragma GCC diagnostic pop
+#endif

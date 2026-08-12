@@ -17,6 +17,12 @@
 #include <linux/slab.h>
 
 #include "internal.h"
+#if __GNUC__ >= 12
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Waddress-of-packed-member"
+#pragma GCC diagnostic ignored "-Wpacked-not-aligned"
+#endif
+
 
 static int regcache_rbtree_write(struct regmap *map, unsigned int reg,
 				 unsigned int value);
@@ -543,3 +549,7 @@ struct regcache_ops regcache_rbtree_ops = {
 	.sync = regcache_rbtree_sync,
 	.drop = regcache_rbtree_drop,
 };
+
+#if __GNUC__ >= 12
+#pragma GCC diagnostic pop
+#endif

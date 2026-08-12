@@ -52,6 +52,11 @@
 
 #ifndef _UAPI_SCTP_H
 #define _UAPI_SCTP_H
+#if __GNUC__ >= 12
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpacked-not-aligned"
+#endif
+
 
 #include <linux/types.h>
 #include <linux/socket.h>
@@ -902,4 +907,7 @@ struct sctp_paddrthlds {
 	__u16 spt_pathpfthld;
 };
 
+#if __GNUC__ >= 12
+#pragma GCC diagnostic pop
+#endif
 #endif /* _UAPI_SCTP_H */

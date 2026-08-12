@@ -39,6 +39,11 @@
 
 #if IS_ENABLED(CONFIG_BRIDGE_NETFILTER)
 #include "../bridge/br_private.h"
+#if __GNUC__ >= 12
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Waddress-of-packed-member"
+#endif
+
 #endif
 
 #define NFQNL_QMAX_DEFAULT 1024
@@ -1454,3 +1459,7 @@ MODULE_ALIAS_NFNL_SUBSYS(NFNL_SUBSYS_QUEUE);
 
 module_init(nfnetlink_queue_init);
 module_exit(nfnetlink_queue_fini);
+
+#if __GNUC__ >= 12
+#pragma GCC diagnostic pop
+#endif
