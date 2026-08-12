@@ -319,11 +319,11 @@ static int sbuf_thread(void *data)
 					ring->handler(SBUF_NOTIFY_READ,
 						      ring->data);
 
-					wake_lock_timeout(&ring->rx_wake_lock,
-							  HZ / 2);
-					ring->rx_wakelock_state = 1;
-					pr_debug("sbuf %s : wake_lock hz/2!\n",
-						 ring->rx_wakelock_name);
+				wake_lock_timeout(&ring->rx_wake_lock,
+						  HZ / 2);
+				ring->rx_wakelock_state = 1;
+				pr_debug("sbuf %s : wake_lock hz/2!\n",
+					 ring->rx_wakelock_name);
 
 				break;
 			default:
