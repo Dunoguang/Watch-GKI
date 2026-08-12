@@ -224,3 +224,25 @@ index 56ec5e54..c3463f5f 100644
  
  void ksu_seccomp_clear_cache(struct seccomp_filter *filter, int nr)
  {
+diff --git a/kernel/manager/throne_tracker.c b/kernel/manager/throne_tracker.c
+index f6c65fc5..acc65a5c 100644
+--- a/kernel/manager/throne_tracker.c
++++ b/kernel/manager/throne_tracker.c
+@@ -134,7 +134,7 @@ FILLDIR_RETURN_TYPE my_actor(MY_ACTOR_CTX_ARG, const char *name, int namelen, lo
+             return FILLDIR_ACTOR_CONTINUE;
+         }
+ 
+-        strncpy(data->dirpath, dirpath, DATA_PATH_LEN - 1);
++        strscpy(data->dirpath, dirpath, DATA_PATH_LEN);
+         data->depth = my_ctx->depth - 1;
+         list_add_tail(&data->list, my_ctx->data_path_list);
+         return FILLDIR_ACTOR_CONTINUE;
+@@ -354,7 +354,7 @@ void do_track_throne(void *data)
+             break;
+         }
+         data->uid = res;
+-        strncpy(data->package, package, KSU_MAX_PACKAGE_NAME);
++        strscpy(data->package, package, KSU_MAX_PACKAGE_NAME);
+         list_add_tail(&data->list, &uid_list);
+ 
+         u16 appid = res % PER_USER_RANGE;
