@@ -17,6 +17,11 @@
 #include <linux/osq_lock.h>
 
 #include "rwsem.h"
+#if __GNUC__ >= 12
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdangling-pointer"
+#endif
+
 
 /*
  * Guide to the rw_semaphore's count field for common values.
@@ -574,3 +579,7 @@ struct rw_semaphore *rwsem_downgrade_wake(struct rw_semaphore *sem)
 	return sem;
 }
 EXPORT_SYMBOL(rwsem_downgrade_wake);
+
+#if __GNUC__ >= 12
+#pragma GCC diagnostic pop
+#endif

@@ -32,6 +32,11 @@
 #include <linux/semaphore.h>
 #include <linux/spinlock.h>
 #include <linux/ftrace.h>
+#if __GNUC__ >= 12
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdangling-pointer"
+#endif
+
 
 static noinline void __down(struct semaphore *sem);
 static noinline int __down_interruptible(struct semaphore *sem);
@@ -261,3 +266,7 @@ static noinline void __sched __up(struct semaphore *sem)
 	waiter->up = true;
 	wake_up_process(waiter->task);
 }
+
+#if __GNUC__ >= 12
+#pragma GCC diagnostic pop
+#endif

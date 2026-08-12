@@ -26,6 +26,11 @@
 #include <linux/interrupt.h>
 #include <linux/debug_locks.h>
 #include <linux/osq_lock.h>
+#if __GNUC__ >= 12
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdangling-pointer"
+#endif
+
 
 /*
  * In the DEBUG case we are using the "NULL fastpath" for mutexes,
@@ -975,3 +980,7 @@ int atomic_dec_and_mutex_lock(atomic_t *cnt, struct mutex *lock)
 	return 1;
 }
 EXPORT_SYMBOL(atomic_dec_and_mutex_lock);
+
+#if __GNUC__ >= 12
+#pragma GCC diagnostic pop
+#endif
