@@ -5,6 +5,11 @@ on:
     branches: [ '**' ]
     tags-ignore: [ '**' ]
   workflow_dispatch:
+    inputs:
+      include_resukisu:
+        description: '编入 ReSukiSU + SuSFS（同时开启/关闭，默认开启）'
+        type: boolean
+        default: true
 
 jobs:
   build:
@@ -27,6 +32,7 @@ jobs:
           submodules: recursive
 
       - name: Update ReSukiSU submodule to latest main
+        if: inputs.include_resukisu != 'false'
         run: |
           # 修复: submodule 的 .git 是文件(gitdir 指针), Kbuild 的 shallow 自救逻辑失效,
           # 必须手动 unshallow, 否则 rev-list --count 恒为 1 -> version code 恒 30701
@@ -36,6 +42,7 @@ jobs:
           echo "ReSukiSU HEAD: $(git -C KernelSU log -1 --format='%h %s')"
 
       - name: Apply ReSukiSU 4.4 customizations
+        if: inputs.include_resukisu != 'false'
         run: |
           # 应用 4.4 定制补丁（剥离 Tracepoint、SUSFS 解耦、Manual Hook 优先）
           git -C KernelSU apply --whitespace=nowarn ../tools/patches/resukisu-4.4.patch
@@ -75,12 +82,18 @@ jobs:
           scripts/config --enable  CONFIG_SECCOMP
           scripts/config --enable  CONFIG_SECCOMP_FILTER
 
-          # KernelSU built into kernel
-          echo "::notice::✅ KernelSU mode (default)"
-          scripts/config --enable  CONFIG_KSU
-          scripts/config --disable CONFIG_KSU_KPROBES_KSUD
-          scripts/config --disable CONFIG_KPROBES
-          scripts/config --disable CONFIG_KRETPROBES
+          if [ "${{ inputs.include_resukisu }}" != "false" ]; then
+            # ReSukiSU + SuSFS 编入（默认，push 触发同样保持）
+            echo "::notice::✅ ReSukiSU + SuSFS 编入 (default)"
+            scripts/config --enable  CONFIG_KSU
+            scripts/config --disable CONFIG_KSU_KPROBES_KSUD
+            scripts/config --disable CONFIG_KPROBES
+            scripts/config --disable CONFIG_KRETPROBES
+          else
+            # 手动选择不编入：只关 CONFIG_KSU，SUSFS 等嵌套项由 olddefconfig 自动清掉
+            echo "::notice::🚫 不编入 ReSukiSU + SuSFS (manual dispatch)"
+            scripts/config --disable CONFIG_KSU
+          fi
           make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- olddefconfig
 
       - name: Build kernel + DTB
@@ -95,6 +108,7 @@ jobs:
 
       # Show ccache effectiveness after build
       - name: Report ReSukiSU version
+        if: inputs.include_resukisu != 'false'
         run: |
           VCODE=$(grep -oE "ReSukiSU version code: [0-9]+" /tmp/build.log | head -1 | awk '{print $NF}')
           VNAME=$(grep -oE "ReSukiSU version name: .+" /tmp/build.log | head -1 | sed 's/.*name: //')
@@ -119,7 +133,11 @@ jobs:
       - name: Rename artifact (WGKI naming)
         run: |
           TS=$(TZ=Asia/Shanghai date +%Y%m%d%H%M%S)
-          ARTIFACT="WGKI-RSSU${vcode}-SuSFS${susver}-SAR-DM-EROFS-ByDunoguang-${TS}"
+          if [ "${{ inputs.include_resukisu }}" != "false" ]; then
+            ARTIFACT="WGKI-RSSU${vcode}-SuSFS${susver}-SAR-DM-EROFS-ByDunoguang-${TS}"
+          else
+            ARTIFACT="WGKI-NOKSU-SAR-DM-EROFS-ByDunoguang-${TS}"
+          fi
           mv boot.img "${ARTIFACT}.img"
           echo "artifact=$ARTIFACT" >> "$GITHUB_ENV"
           echo "::notice::✅ 产物: ${ARTIFACT}.img"
