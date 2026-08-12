@@ -121,7 +121,7 @@ static int nf_xfrm6_input_decode_cap_log(struct sk_buff *skb)
 	}
 
 	orig_dev = copy_skb->dev;
-	if (!orig_dev || !orig_dev->name)
+	if (!orig_dev)
 		goto free_clone1;
 
 	rcu_read_lock();
