@@ -13,6 +13,11 @@
 #include <linux/platform_device.h>
 #include <linux/kdev_t.h>
 #include <linux/usb/ch9.h>
+#if __GNUC__ >= 12
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Waddress-of-packed-member"
+#endif
+
 
 #ifdef CONFIG_USB_CONFIGFS_F_ACC
 extern int acc_ctrlrequest(struct usb_composite_dev *cdev,
@@ -1778,3 +1783,7 @@ static void __exit gadget_cfs_exit(void)
 
 }
 module_exit(gadget_cfs_exit);
+
+#if __GNUC__ >= 12
+#pragma GCC diagnostic pop
+#endif

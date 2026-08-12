@@ -19,6 +19,11 @@
 #include <net/cfg80211.h>
 #include <net/ieee80211_radiotap.h>
 #include <asm/unaligned.h>
+#if __GNUC__ >= 12
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Waddress-of-packed-member"
+#endif
+
 
 /* function prototypes and related defs are in include/net/cfg80211.h */
 
@@ -367,3 +372,7 @@ int ieee80211_radiotap_iterator_next(
 	}
 }
 EXPORT_SYMBOL(ieee80211_radiotap_iterator_next);
+
+#if __GNUC__ >= 12
+#pragma GCC diagnostic pop
+#endif

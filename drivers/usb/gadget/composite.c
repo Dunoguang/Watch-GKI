@@ -23,6 +23,11 @@
 #include <asm/unaligned.h>
 
 #include "u_os_desc.h"
+#if __GNUC__ >= 12
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Waddress-of-packed-member"
+#endif
+
 
 /**
  * struct usb_os_string - represents OS String to be reported by a gadget
@@ -2355,3 +2360,7 @@ EXPORT_SYMBOL_GPL(usb_composite_overwrite_options);
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("David Brownell");
+
+#if __GNUC__ >= 12
+#pragma GCC diagnostic pop
+#endif

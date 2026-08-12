@@ -7,6 +7,11 @@
  */
 #ifndef _LINUX_F2FS_H
 #define _LINUX_F2FS_H
+#if __GNUC__ >= 12
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Waddress-of-packed-member"
+#endif
+
 
 #include <linux/uio.h>
 #include <linux/types.h>
@@ -3714,6 +3719,9 @@ static inline bool is_journalled_quota(struct f2fs_sb_info *sbi)
 		F2FS_OPTION(sbi).s_qf_names[GRPQUOTA] ||
 		F2FS_OPTION(sbi).s_qf_names[PRJQUOTA])
 		return true;
+#if __GNUC__ >= 12
+#pragma GCC diagnostic pop
+#endif
 #endif
 	return false;
 }
