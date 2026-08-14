@@ -407,6 +407,7 @@ retry:
 							      buf, bufsiz);
 #ifdef CONFIG_KSU_SUSFS_OPEN_REDIRECT
 out_readlink:
+	;
 #endif
 			}
 		}

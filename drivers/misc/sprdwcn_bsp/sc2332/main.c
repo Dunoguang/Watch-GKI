@@ -1195,7 +1195,13 @@ static struct platform_driver sprdwl_driver = {
 	},
 };
 
-module_platform_driver(sprdwl_driver);
+static int __init sprdwl_driver_init(void)
+{
+	return platform_driver_register(&sprdwl_driver);
+}
+/* 延迟到 late_initcall_sync：确保 WCN 平台驱动 (late_initcall) 先完成 probe，
+ * 避免 WiFi 内嵌后 probe 过早导致 start_integrate_wcn 访问未初始化全局（marlin_lock/mdbg_proc）崩溃 */
+late_initcall_sync(sprdwl_driver_init);
 
 MODULE_DESCRIPTION("Spreadtrum Wireless LAN Driver");
 MODULE_AUTHOR("Spreadtrum WCN Division");
