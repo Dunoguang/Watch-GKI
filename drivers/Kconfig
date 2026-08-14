@@ -225,4 +225,10 @@ config ZYT_LCM_LIST
 
 source "drivers/kernelsu/Kconfig"
 
+
+config GPU_TRACEPOINTS
+	bool "Enable GPU tracepoints"
+	default n
+
+source "drivers/gpu/arm/midgard/mali/Kconfig"
 endmenu

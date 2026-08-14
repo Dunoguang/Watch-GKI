@@ -233,7 +233,7 @@ ifeq ($(CONFIG_MALI_MIDGARD),m)
 #include  $(src)/platform/$(platform_name)/Kbuild
 SRC += platform/$(platform_name)/mali_kbase_config_$(platform_name).c
 else ifeq ($(CONFIG_MALI_MIDGARD),y)
-obj-$(CONFIG_MALI_MIDGARD) += platform/
+#obj-$(CONFIG_MALI_MIDGARD) += platform/ (handled via sharkle/Kbuild include)
 endif
 
 
