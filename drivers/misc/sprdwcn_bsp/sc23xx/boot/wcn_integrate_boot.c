@@ -18,7 +18,7 @@
 #include "wcn_gnss.h"
 #include "wcn_procfs.h"
 
-static struct mutex marlin_lock;
+static DEFINE_MUTEX(marlin_lock); /* 静态初始化，避免 probe 顺序导致未初始化崩溃 */
 static struct wifi_calibration wifi_data;
 
 /* efuse data */
@@ -39,7 +39,7 @@ struct sprdwcn_gnss_ops *gnss_ops;
 
 void wcn_boot_init(void)
 {
-	mutex_init(&marlin_lock);
+	/* marlin_lock 已通过 DEFINE_MUTEX 静态初始化 */
 }
 
 void wcn_device_poweroff(void)

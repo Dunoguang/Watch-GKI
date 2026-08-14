@@ -1099,6 +1099,8 @@ void proc_fs_exit(void)
 
 int get_loopcheck_status(void)
 {
+	if (!mdbg_proc)
+		return 0;
 	return mdbg_proc->fail_count;
 }
 

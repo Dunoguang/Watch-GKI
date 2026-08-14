@@ -13,4 +13,4 @@
 #
 
 
-obj-y += mali_kbase_config_sharkle.o
+obj-y += platform/sharkle/mali_kbase_config_sharkle.o
