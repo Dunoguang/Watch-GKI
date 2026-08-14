@@ -13,6 +13,11 @@
 
 #ifndef _LINUX_SKBUFF_H
 #define _LINUX_SKBUFF_H
+#if __GNUC__ >= 12
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Warray-bounds"
+#endif
+
 
 #include <linux/kernel.h>
 #include <linux/kmemcheck.h>
@@ -3652,4 +3657,7 @@ static inline unsigned int skb_gso_network_seglen(const struct sk_buff *skb)
 }
 
 #endif	/* __KERNEL__ */
+#if __GNUC__ >= 12
+#pragma GCC diagnostic pop
+#endif
 #endif	/* _LINUX_SKBUFF_H */

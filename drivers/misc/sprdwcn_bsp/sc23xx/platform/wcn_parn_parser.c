@@ -109,12 +109,13 @@ static int load_fstab_conf(const char *p_path, char *WCN_PATH)
 		if (p_name != NULL) {
 			temp = strstr(p_name, "userdata");
 			if (temp != NULL) {
-				snprintf(WCN_PATH, strlen(p_name)+1,
-					"%s", p_name);
-				WCN_PATH[strlen(WCN_PATH) - strlen(temp)]
-					= '\0';
-				snprintf(WCN_PATH, strlen(WCN_PATH)+9,
-					"%s%s", WCN_PATH, "wcnmodem");
+				/* WCN_PATH is a char* (no sizeof); copy prefix up to
+				 * "userdata" then append "wcnmodem" — no overlap, no
+				 * -Wrestrict. buffer is FIRMWARE_FILEPATHNAME_LENGTH_MAX
+				 */
+				size_t plen = strlen(p_name) - strlen(temp);
+				memcpy(WCN_PATH, p_name, plen);
+				memcpy(WCN_PATH + plen, "wcnmodem", sizeof("wcnmodem"));
 				match_flag = true;
 				break;
 			}
@@ -185,7 +186,7 @@ int parse_firmware_path(char *firmware_path)
 			continue;
 		}
 		memset(fstab_name, 0, sizeof(fstab_name));
-		strncpy(fstab_name, fstab_dir[loop], sizeof(fstab_dir[loop]));
+		strlcpy(fstab_name, fstab_dir[loop], sizeof(fstab_name));
 		if (strlen(fstab_name) > 1)
 			fstab_name[strlen(fstab_name)] = '/';
 		strncpy(fstab_base, fstab_name, sizeof(fstab_base));

@@ -22,6 +22,11 @@
 
 #include <linux/compat.h>
 #include <linux/slab.h>
+#if __GNUC__ >= 12
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Waddress-of-packed-member"
+#endif
+
 
 struct snd_ctl_elem_list32 {
 	u32 offset;
@@ -503,3 +508,7 @@ static inline long snd_ctl_ioctl_compat(struct file *file, unsigned int cmd, uns
 	up_read(&snd_ioctl_rwsem);
 	return -ENOIOCTLCMD;
 }
+
+#if __GNUC__ >= 12
+#pragma GCC diagnostic pop
+#endif

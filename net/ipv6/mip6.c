@@ -34,6 +34,11 @@
 #include <net/rawv6.h>
 #include <net/xfrm.h>
 #include <net/mip6.h>
+#if __GNUC__ >= 12
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Waddress-of-packed-member"
+#endif
+
 
 static inline unsigned int calc_padlen(unsigned int len, unsigned int n)
 {
@@ -523,3 +528,7 @@ module_exit(mip6_fini);
 MODULE_LICENSE("GPL");
 MODULE_ALIAS_XFRM_TYPE(AF_INET6, XFRM_PROTO_DSTOPTS);
 MODULE_ALIAS_XFRM_TYPE(AF_INET6, XFRM_PROTO_ROUTING);
+
+#if __GNUC__ >= 12
+#pragma GCC diagnostic pop
+#endif

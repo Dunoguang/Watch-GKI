@@ -221,7 +221,7 @@ struct sprd_adf_context *sprd_adf_context_create(struct platform_device *pdev)
 		ADF_DEBUG_WARN("get display config failed\n");
 		goto error3;
 	}
-	pr_info("%s: config devices=%zu interfaces=%zu overlayengines=%zu allowed_attachments=%zu\n",
+	pr_info("%s: config devices=%d interfaces=%d overlayengines=%d allowed_attachments=%u\n",
 			__func__, display_config->n_devices,
 			display_config->n_interfaces,
 			display_config->n_overlayengines,

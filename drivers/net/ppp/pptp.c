@@ -39,6 +39,11 @@
 #include <net/gre.h>
 
 #include <linux/uaccess.h>
+#if __GNUC__ >= 12
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Waddress-of-packed-member"
+#endif
+
 
 #define PPTP_DRIVER_VERSION "0.8.5"
 
@@ -737,3 +742,7 @@ module_exit(pptp_exit_module);
 MODULE_DESCRIPTION("Point-to-Point Tunneling Protocol");
 MODULE_AUTHOR("D. Kozlov (xeb@mail.ru)");
 MODULE_LICENSE("GPL");
+
+#if __GNUC__ >= 12
+#pragma GCC diagnostic pop
+#endif

@@ -8,6 +8,11 @@
 #include <linux/rwsem.h>
 #include <linux/sched.h>
 #include <linux/export.h>
+#if __GNUC__ >= 12
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdangling-pointer"
+#endif
+
 
 enum rwsem_waiter_type {
 	RWSEM_WAITING_FOR_WRITE,
@@ -301,3 +306,7 @@ void __downgrade_write(struct rw_semaphore *sem)
 	raw_spin_unlock_irqrestore(&sem->wait_lock, flags);
 }
 
+
+#if __GNUC__ >= 12
+#pragma GCC diagnostic pop
+#endif

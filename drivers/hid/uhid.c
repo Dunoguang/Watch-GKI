@@ -24,6 +24,11 @@
 #include <linux/spinlock.h>
 #include <linux/uhid.h>
 #include <linux/wait.h>
+#if __GNUC__ >= 12
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Waddress-of-packed-member"
+#endif
+
 
 #define UHID_NAME	"uhid"
 #define UHID_BUFSIZE	32
@@ -509,11 +514,11 @@ static int uhid_dev_create2(struct uhid_device *uhid,
 	}
 
 	len = min(sizeof(hid->name), sizeof(ev->u.create2.name)) - 1;
-	strncpy(hid->name, ev->u.create2.name, len);
+	strscpy(hid->name, ev->u.create2.name, len + 1);
 	len = min(sizeof(hid->phys), sizeof(ev->u.create2.phys)) - 1;
-	strncpy(hid->phys, ev->u.create2.phys, len);
+	strscpy(hid->phys, ev->u.create2.phys, len + 1);
 	len = min(sizeof(hid->uniq), sizeof(ev->u.create2.uniq)) - 1;
-	strncpy(hid->uniq, ev->u.create2.uniq, len);
+	strscpy(hid->uniq, ev->u.create2.uniq, len + 1);
 
 	hid->ll_driver = &uhid_hid_driver;
 	hid->bus = ev->u.create2.bus;
@@ -810,3 +815,7 @@ MODULE_AUTHOR("David Herrmann <dh.herrmann@gmail.com>");
 MODULE_DESCRIPTION("User-space I/O driver support for HID subsystem");
 MODULE_ALIAS_MISCDEV(UHID_MINOR);
 MODULE_ALIAS("devname:" UHID_NAME);
+
+#if __GNUC__ >= 12
+#pragma GCC diagnostic pop
+#endif

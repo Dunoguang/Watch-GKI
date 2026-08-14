@@ -22,6 +22,11 @@
 #include <openssl/pem.h>
 #include <openssl/err.h>
 #include <openssl/engine.h>
+#if __GNUC__ >= 12
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#endif
+
 
 #define PKEY_ID_PKCS7 2
 
@@ -160,3 +165,7 @@ int main(int argc, char **argv)
 
 	return 0;
 }
+
+#if __GNUC__ >= 12
+#pragma GCC diagnostic pop
+#endif

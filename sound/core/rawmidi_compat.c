@@ -21,6 +21,11 @@
 /* This file included from rawmidi.c */
 
 #include <linux/compat.h>
+#if __GNUC__ >= 12
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Waddress-of-packed-member"
+#endif
+
 
 struct snd_rawmidi_params32 {
 	s32 stream;
@@ -177,3 +182,7 @@ static long snd_rawmidi_ioctl_compat(struct file *file, unsigned int cmd, unsign
 	}
 	return -ENOIOCTLCMD;
 }
+
+#if __GNUC__ >= 12
+#pragma GCC diagnostic pop
+#endif

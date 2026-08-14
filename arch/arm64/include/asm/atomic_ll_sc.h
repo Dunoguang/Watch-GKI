@@ -21,6 +21,11 @@
 #ifndef __ASM_ATOMIC_LL_SC_H
 #define __ASM_ATOMIC_LL_SC_H
 
+#if __GNUC__ >= 12
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Warray-bounds"
+#endif
+
 #ifndef __ARM64_IN_ATOMIC_IMPL
 #error "please don't include this file directly"
 #endif
@@ -267,3 +272,8 @@ __CMPXCHG_DBL(_mb, dmb ish, l, "memory")
 #undef __CMPXCHG_DBL
 
 #endif	/* __ASM_ATOMIC_LL_SC_H */
+
+#if __GNUC__ >= 12
+#pragma GCC diagnostic pop
+#endif
+

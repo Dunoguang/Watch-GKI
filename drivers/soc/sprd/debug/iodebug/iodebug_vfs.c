@@ -132,9 +132,9 @@ static int iodebug_update_vfs_io(struct vfs_iodebug_info *iodebug_info,
 	if (iodebug_info->pid == 0) {
 		memset(iodebug_info, 0, sizeof(struct vfs_iodebug_info));
 		iodebug_info->pid = current->pid;
-		strncpy(iodebug_info->name,
+		strscpy(iodebug_info->name,
 			current->group_leader->comm,
-			sizeof(iodebug_info->name) - 1);
+			sizeof(iodebug_info->name));
 		g_vfs_io_buffer_cnt++;
 	}
 
@@ -264,6 +264,7 @@ static void iodebug_print_vfs_io(int rw, int i, struct seq_file *seq_f, void *v)
 
 	/* 2. each task info */
 	for (j = 0; j < MAX_IO_BUFFER_LEN; j++) {
+		size_t off;
 		/* not show empty device */
 		if (g_vfs_io_buffer_temp[i][j].pid == 0)
 			break;
@@ -280,9 +281,9 @@ static void iodebug_print_vfs_io(int rw, int i, struct seq_file *seq_f, void *v)
 			g_vfs_io_buffer_temp[i][j].pid,
 			g_vfs_io_buffer_temp[i][j].name);
 		for (k = 0; k < IO_SIZE_MAX; k++) {
-			snprintf(prf_buffer, sizeof(prf_buffer),
-				"%s %6d , %-7d ",
-				prf_buffer,
+			off = strlen(prf_buffer);
+			snprintf(prf_buffer + off, sizeof(prf_buffer) - off,
+				" %6d , %-7d ",
 				my_io_info->cnt[k],
 				my_io_info->bytes[k]);
 			bytes_per_task += my_io_info->bytes[k];
@@ -290,9 +291,10 @@ static void iodebug_print_vfs_io(int rw, int i, struct seq_file *seq_f, void *v)
 			cnt_per_size[k] += my_io_info->cnt[k];
 			bytes_per_size[k] += my_io_info->bytes[k];
 		}
-		snprintf(prf_buffer, sizeof(prf_buffer),
-				"%s %7d , %-7d %7dms",
-				prf_buffer, cnt_per_task, bytes_per_task,
+		off = strlen(prf_buffer);
+		snprintf(prf_buffer + off, sizeof(prf_buffer) - off,
+				" %7d , %-7d %7dms",
+				cnt_per_task, bytes_per_task,
 				jiffies_to_msecs(my_io_info->io_jiffies));
 
 		prf_buffer[sizeof(prf_buffer)-1] = 0;

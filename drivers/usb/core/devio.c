@@ -54,6 +54,11 @@
 #include <linux/moduleparam.h>
 
 #include "usb.h"
+#if __GNUC__ >= 12
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Waddress-of-packed-member"
+#endif
+
 
 #define USB_MAXBUS			64
 #define USB_DEVICE_MAX			(USB_MAXBUS * 128)
@@ -2457,3 +2462,7 @@ void usb_devio_cleanup(void)
 	cdev_del(&usb_device_cdev);
 	unregister_chrdev_region(USB_DEVICE_DEV, USB_DEVICE_MAX);
 }
+
+#if __GNUC__ >= 12
+#pragma GCC diagnostic pop
+#endif
