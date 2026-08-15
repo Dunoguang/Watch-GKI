@@ -413,14 +413,15 @@ static int fuse_statfs(struct dentry *dentry, struct kstatfs *buf)
 	FUSE_ARGS(args);
 	struct fuse_statfs_out outarg;
 	int err;
-
-	if (!fuse_allow_current_process(fc)) {
-		/*
-		 * DW99 fix: return real storage stats (lower fs) instead of zeros,
-		 * otherwise FUSE daemon statvfs'ing its own mount point yields 0
-		 * free space and CameraX aborts recording with
-		 * ERROR_INSUFFICIENT_STORAGE.
-		 */
+	/*
+	 * DW99 fix v2: always report real lower-fs stats instead of relying
+	 * on fuse_allow_current_process() short-circuit. The FUSE mount uses
+	 * allow_other, so the short-circuit branch is never taken and every
+	 * statfs is forwarded to the daemon, which recurses into its own
+	 * mount point and yields 0 free space -> CameraX recording aborts
+	 * with ERROR_INSUFFICIENT_STORAGE.
+	 */
+	{
 		struct path p;
 		struct kstatfs real;
 		if (kern_path("/data/media/0", 0, &p) == 0) {
@@ -431,8 +432,6 @@ static int fuse_statfs(struct dentry *dentry, struct kstatfs *buf)
 			}
 			path_put(&p);
 		}
-		buf->f_type = FUSE_SUPER_MAGIC;
-		return 0;
 	}
 
 	memset(&outarg, 0, sizeof(outarg));
