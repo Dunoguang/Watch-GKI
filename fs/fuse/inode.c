@@ -20,6 +20,7 @@
 #include <linux/random.h>
 #include <linux/sched.h>
 #include <linux/exportfs.h>
+#include <linux/namei.h>
 
 MODULE_AUTHOR("Miklos Szeredi <miklos@szeredi.hu>");
 MODULE_DESCRIPTION("Filesystem in Userspace");
@@ -414,6 +415,22 @@ static int fuse_statfs(struct dentry *dentry, struct kstatfs *buf)
 	int err;
 
 	if (!fuse_allow_current_process(fc)) {
+		/*
+		 * DW99 fix: return real storage stats (lower fs) instead of zeros,
+		 * otherwise FUSE daemon statvfs'ing its own mount point yields 0
+		 * free space and CameraX aborts recording with
+		 * ERROR_INSUFFICIENT_STORAGE.
+		 */
+		struct path p;
+		struct kstatfs real;
+		if (kern_path("/data/media/0", 0, &p) == 0) {
+			if (vfs_statfs(&p, &real) == 0) {
+				*buf = real;
+				path_put(&p);
+				return 0;
+			}
+			path_put(&p);
+		}
 		buf->f_type = FUSE_SUPER_MAGIC;
 		return 0;
 	}
