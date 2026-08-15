@@ -19,8 +19,7 @@
 #include <linux/statfs.h>
 #include <linux/random.h>
 #include <linux/sched.h>
-#include <linux/cred.h>
-extern struct cred init_cred;
+#include <linux/magic.h>
 #include <linux/exportfs.h>
 #include <linux/namei.h>
 
@@ -408,6 +407,13 @@ static void convert_fuse_statfs(struct kstatfs *stbuf, struct fuse_kstatfs *attr
 	/* fsid is left zero */
 }
 
+static void find_data_super(struct super_block *sb, void *arg)
+{
+	if (sb->s_magic == F2FS_SUPER_MAGIC &&
+	    strncmp(sb->s_id, "mmcblk0p37", sizeof(sb->s_id)) == 0)
+		*(struct super_block **)arg = sb;
+}
+
 static int fuse_statfs(struct dentry *dentry, struct kstatfs *buf)
 {
 	struct super_block *sb = dentry->d_sb;
@@ -424,26 +430,20 @@ static int fuse_statfs(struct dentry *dentry, struct kstatfs *buf)
 	 * with ERROR_INSUFFICIENT_STORAGE.
 	 */
 	{
+		struct super_block *data_sb = NULL;
 		struct path p;
 		struct kstatfs real;
-		const struct cred *old_cred;
-		/*
-		 * Use init creds for the lookup: plain kern_path() performs
-		 * pathwalk with MAY_EXEC checks against the calling process'
-		 * SELinux context, which denies search on /data for app/HAL
-		 * domains and falls back to the broken daemon-forwarding path.
-		 */
-		old_cred = override_creds(&init_cred);
-		if (kern_path("/data/media/0", 0, &p) == 0) {
+		iterate_supers(find_data_super, &data_sb);
+		if (data_sb) {
+			p.dentry = dget(data_sb->s_root);
+			p.mnt = NULL;
 			if (vfs_statfs(&p, &real) == 0) {
-				revert_creds(old_cred);
+				dput(p.dentry);
 				*buf = real;
-				path_put(&p);
 				return 0;
 			}
-			path_put(&p);
+			dput(p.dentry);
 		}
-		revert_creds(old_cred);
 	}
 
 	memset(&outarg, 0, sizeof(outarg));
