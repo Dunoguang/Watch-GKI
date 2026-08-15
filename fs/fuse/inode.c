@@ -20,6 +20,7 @@
 #include <linux/random.h>
 #include <linux/sched.h>
 #include <linux/cred.h>
+extern struct cred init_cred;
 #include <linux/exportfs.h>
 #include <linux/namei.h>
 
