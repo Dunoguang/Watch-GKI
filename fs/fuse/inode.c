@@ -19,6 +19,7 @@
 #include <linux/statfs.h>
 #include <linux/random.h>
 #include <linux/sched.h>
+#include <linux/cred.h>
 #include <linux/exportfs.h>
 #include <linux/namei.h>
 
@@ -424,14 +425,24 @@ static int fuse_statfs(struct dentry *dentry, struct kstatfs *buf)
 	{
 		struct path p;
 		struct kstatfs real;
+		const struct cred *old_cred;
+		/*
+		 * Use init creds for the lookup: plain kern_path() performs
+		 * pathwalk with MAY_EXEC checks against the calling process'
+		 * SELinux context, which denies search on /data for app/HAL
+		 * domains and falls back to the broken daemon-forwarding path.
+		 */
+		old_cred = override_creds(&init_cred);
 		if (kern_path("/data/media/0", 0, &p) == 0) {
 			if (vfs_statfs(&p, &real) == 0) {
+				revert_creds(old_cred);
 				*buf = real;
 				path_put(&p);
 				return 0;
 			}
 			path_put(&p);
 		}
+		revert_creds(old_cred);
 	}
 
 	memset(&outarg, 0, sizeof(outarg));
