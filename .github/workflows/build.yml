@@ -166,6 +166,89 @@ jobs:
           name: ${{ env.artifact }}
           path: ${{ env.artifact }}.img
 
+      # ============ AnyKernel3 附加产出 (osm0sis/AnyKernel3 刷机 zip) ============
+      # 只替换 kernel 段, ramdisk/SPRD-wrapped DTB 原样保留; 失败不阻断 boot.img 主产物
+      - name: Checkout AnyKernel3
+        uses: actions/checkout@v7.0.1
+        with:
+          repository: osm0sis/AnyKernel3
+          path: AnyKernel3
+
+      - name: Package AnyKernel3 zip
+        run: |
+          command -v zip >/dev/null || sudo apt-get install -y zip
+          cat > AnyKernel3/anykernel.sh <<'EOF'
+          ### AnyKernel3 Ramdisk Mod Script
+          ## osm0sis @ xda-developers
+
+          ### AnyKernel setup
+          properties() { '
+          kernel.string=Watch-GKI for DW99 (SL8541e) by Dunoguang
+          do.devicecheck=0
+          do.modules=0
+          do.systemless=0
+          do.cleanup=1
+          do.cleanuponabort=0
+          supported.versions=
+          supported.patchlevels=
+          supported.vendorpatchlevels=
+          '; } # end properties
+
+          ### AnyKernel install
+          boot_attributes() {
+          set_perm_recursive 0 0 755 644 $RAMDISK/*;
+          set_perm_recursive 0 0 750 750 $RAMDISK/init* $RAMDISK/sbin;
+          } # end attributes
+
+          # boot shell variables
+          BLOCK=/dev/block/by-name/boot;
+          IS_SLOT_DEVICE=0;
+          RAMDISK_COMPRESSION=auto;
+          PATCH_VBMETA_FLAG=auto;
+
+          . tools/ak3-core.sh;
+
+          dump_boot;
+          write_boot;
+          ## end boot install
+          EOF
+          cp arch/arm64/boot/Image AnyKernel3/Image
+          cd AnyKernel3
+          ZIP="${artifact}-AK3.zip"
+          zip -r9 "$ZIP" * -x .git README.md '*placeholder'
+          cd ..
+          mv "AnyKernel3/$ZIP" .
+          echo "ak3_zip=$ZIP" >> "$GITHUB_ENV"
+          echo "::notice::✅ AnyKernel3 产物: ${ZIP} ($(du -h "$ZIP" | cut -f1))"
+          unzip -l "$ZIP" | grep -E "Image|anykernel.sh"
+
+      - name: Upload AnyKernel3 zip
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: ${{ env.ak3_zip }}
+          path: ${{ env.ak3_zip }}
+
+      - name: ☁️ 上传 AnyKernel3 到 Tempfile
+        if: always()
+        continue-on-error: true
+        run: |
+          if [ ! -f "${ak3_zip}" ]; then
+            echo "⚠️ AK3 zip 不存在，跳过 Tempfile 上传" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          RESP=$(curl -sS -X POST https://tempfile.org/api/upload/local \
+            -F "files=@${ak3_zip}" -F "expiryHours=48")
+          URL=$(echo "$RESP" | python3 -c "import sys,json; print(json.load(sys.stdin)['files'][0]['url'] + 'download')")
+          cat >> "$GITHUB_STEP_SUMMARY" << EOF
+          ## ☁️ AnyKernel3 Tempfile 下载
+          | 📦 产物 | 🔗 链接 | 📏 大小 | ⏰ 有效期 |
+          |---------|---------|---------|-----------|
+          | ${ak3_zip} | [点击下载](${URL}) | $(du -h "$ak3_zip" | cut -f1) | 48 小时 |
+
+          > \`${URL}\`
+          EOF
+          echo "AK3_TEMP_URL=${URL}"
+
       # 参考 Re-Vibe-Launcher: 同时上传 Tempfile, 无论构建成败都执行, 失败不阻断
       - name: ☁️ 上传到 Tempfile (无论成败)
         if: always()
