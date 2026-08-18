@@ -201,7 +201,7 @@ jobs:
           } # end attributes
 
           # boot shell variables
-          BLOCK=boot;  # 分区名自动探测: by-name -> bootdevice -> platform/*/by-name -> /dev/boot (recovery 无 by-name 也能刷)
+          BLOCK=/dev/block/platform/soc/soc:ap-ahb/20600000.sdio/by-name/boot;  # DW99 实测路径（recovery 下唯一存在形态）
           IS_SLOT_DEVICE=0;
           RAMDISK_COMPRESSION=auto;
           PATCH_VBMETA_FLAG=auto;
