@@ -1,8 +1,8 @@
 diff --git a/kernel/Kbuild b/kernel/Kbuild
-index 4ac11d61..3314ef0d 100644
+index a31d76bd..ef3613b3 100644
 --- a/kernel/Kbuild
 +++ b/kernel/Kbuild
-@@ -139,41 +139,10 @@ ifeq ($(CONFIG_KSU),y)
+@@ -140,41 +140,10 @@ ifeq ($(CONFIG_KSU),y)
    endif
  endif
  
@@ -46,7 +46,7 @@ index 4ac11d61..3314ef0d 100644
  else ifdef CONFIG_KSU_SUSFS
    $(info -- $(REPO_NAME): using SuSFS Inline hook)
    include $(KSU_SRC)/tools/inline_hook_check.mk
-@@ -193,7 +162,6 @@ else
+@@ -194,7 +163,6 @@ else
    endif
  endif
  
@@ -54,7 +54,7 @@ index 4ac11d61..3314ef0d 100644
    # For old kernel, pkg observer maybe let system freeze
    # https://github.com/ReSukiSU/ReSukiSU/issues/82#issuecomment-4015396974
    #
-@@ -205,7 +173,6 @@ ifndef CONFIG_KSU_TRACEPOINT_HOOK
+@@ -206,7 +174,6 @@ ifndef CONFIG_KSU_TRACEPOINT_HOOK
      ifndef CONFIG_KSU_DISABLE_MANAGER
        kernelsu-objs += manager/pkg_observer.o
      endif
@@ -97,83 +97,36 @@ index 45f87e42..7e63fc96 100644
  
  menu "KernelSU - Manual Hook Auto hook"
      depends on KSU_MANUAL_HOOK
-diff --git a/kernel/runtime/ksud_integration.c b/kernel/runtime/ksud_integration.c
-index 0bf3c695..1fcecce7 100644
---- a/kernel/runtime/ksud_integration.c
-+++ b/kernel/runtime/ksud_integration.c
-@@ -95,27 +95,6 @@ static void stop_execve_hook(void);
-         bool ret = schedule_work(&stop_input_hook_work);
-         pr_info("unregister input kprobe: %d!\n", ret);
-     }
--#elif defined(CONFIG_KSU_SUSFS)
--    DEFINE_STATIC_KEY_TRUE(ksu_is_init_rc_hook_enabled);
--    DEFINE_STATIC_KEY_TRUE(ksu_is_input_hook_enabled);
--
--    // use define to avoid ifdef
--    #define ksu_init_rc_hook_inactive() (!static_branch_likely(&ksu_is_init_rc_hook_enabled))
--    #define ksu_input_hook_inactive() (!static_branch_likely(&ksu_is_input_hook_enabled))
--
--    static void stop_init_rc_hook(void)
--    {
--        if (static_key_enabled(&ksu_is_init_rc_hook_enabled))
--            static_branch_disable(&ksu_is_init_rc_hook_enabled);
--        pr_info("stop init_rc_hook!\n");
--    }
--
--    static inline void stop_input_hook(void)
--    {
--        if (static_key_enabled(&ksu_is_input_hook_enabled))
--            static_branch_disable(&ksu_is_input_hook_enabled);
--    }
--
- #elif defined(CONFIG_KSU_MANUAL_HOOK)
-     #if defined(CONFIG_KSU_MANUAL_HOOK_AUTO_INITRC_HOOK) && defined(KSU_COMPAT_USE_STATIC_KEY)
-         DEFINE_STATIC_KEY_TRUE(ksu_init_rc_hook);
-@@ -166,6 +145,27 @@ static void stop_execve_hook(void);
-         #endif
-     #endif
- 
-+#elif defined(CONFIG_KSU_SUSFS)
-+    DEFINE_STATIC_KEY_TRUE(ksu_is_init_rc_hook_enabled);
-+    DEFINE_STATIC_KEY_TRUE(ksu_is_input_hook_enabled);
-+
-+    // use define to avoid ifdef
-+    #define ksu_init_rc_hook_inactive() (!static_branch_likely(&ksu_is_init_rc_hook_enabled))
-+    #define ksu_input_hook_inactive() (!static_branch_likely(&ksu_is_input_hook_enabled))
-+
-+    static void stop_init_rc_hook(void)
-+    {
-+        if (static_key_enabled(&ksu_is_init_rc_hook_enabled))
-+            static_branch_disable(&ksu_is_init_rc_hook_enabled);
-+        pr_info("stop init_rc_hook!\n");
-+    }
-+
-+    static inline void stop_input_hook(void)
-+    {
-+        if (static_key_enabled(&ksu_is_input_hook_enabled))
-+            static_branch_disable(&ksu_is_input_hook_enabled);
-+    }
-+
- #else
-     #error "Unsupported hook type"
- #endif
 diff --git a/kernel/hook/setuid_hook.c b/kernel/hook/setuid_hook.c
-index 43f7ce46..ee3f98b4 100644
+index 9350a162..a8252127 100644
 --- a/kernel/hook/setuid_hook.c
 +++ b/kernel/hook/setuid_hook.c
-@@ -125,7 +125,11 @@ int ksu_handle_setuid(uid_t new_uid, uid_t old_uid)
- 
- #else // #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0)
-     if (ksu_is_allow_uid_for_current(new_uid)) {
+@@ -118,7 +118,11 @@ static int handle_zygote_next_setresuid(uid_t new_uid)
+             spin_unlock_irq(&current->sighand->siglock);
+         }
+ #else
 -        disable_seccomp();
 +        if (current->seccomp.mode == SECCOMP_MODE_FILTER && current->seccomp.filter) {
 +            spin_lock_irq(&current->sighand->siglock);
 +            ksu_seccomp_allow_cache(current->seccomp.filter, __NR_reboot);
 +            spin_unlock_irq(&current->sighand->siglock);
 +        }
- #ifndef CONFIG_KSU_TRACEPOINT_HOOK
-         ksu_clear_current_proc_unprivillege();
  #endif
+         return 0;
+     }
+@@ -165,7 +169,11 @@ int ksu_handle_setuid(uid_t new_uid, uid_t old_uid)
+             spin_unlock_irq(&current->sighand->siglock);
+         }
+ #else
+-        disable_seccomp();
++        if (current->seccomp.mode == SECCOMP_MODE_FILTER && current->seccomp.filter) {
++            spin_lock_irq(&current->sighand->siglock);
++            ksu_seccomp_allow_cache(current->seccomp.filter, __NR_reboot);
++            spin_unlock_irq(&current->sighand->siglock);
++        }
+ #endif
+         ksu_clear_current_proc_unprivillege();
+         if (ksu_is_manager_uid(new_uid)) {
 diff --git a/kernel/infra/seccomp_cache.c b/kernel/infra/seccomp_cache.c
 index 56ec5e54..c3463f5f 100644
 --- a/kernel/infra/seccomp_cache.c
@@ -246,8 +199,68 @@ index f6c65fc5..acc65a5c 100644
          list_add_tail(&data->list, &uid_list);
  
          u16 appid = res % PER_USER_RANGE;
+diff --git a/kernel/runtime/ksud_integration.c b/kernel/runtime/ksud_integration.c
+index 2ddcf312..88f78837 100644
+--- a/kernel/runtime/ksud_integration.c
++++ b/kernel/runtime/ksud_integration.c
+@@ -95,27 +95,6 @@ static void stop_execve_hook(void);
+         bool ret = schedule_work(&stop_input_hook_work);
+         pr_info("unregister input kprobe: %d!\n", ret);
+     }
+-#elif defined(CONFIG_KSU_SUSFS)
+-    DEFINE_STATIC_KEY_TRUE(ksu_is_init_rc_hook_enabled);
+-    DEFINE_STATIC_KEY_TRUE(ksu_is_input_hook_enabled);
+-
+-    // use define to avoid ifdef
+-    #define ksu_init_rc_hook_inactive() (!static_branch_likely(&ksu_is_init_rc_hook_enabled))
+-    #define ksu_input_hook_inactive() (!static_branch_likely(&ksu_is_input_hook_enabled))
+-
+-    static void stop_init_rc_hook(void)
+-    {
+-        if (static_key_enabled(&ksu_is_init_rc_hook_enabled))
+-            static_branch_disable(&ksu_is_init_rc_hook_enabled);
+-        pr_info("stop init_rc_hook!\n");
+-    }
+-
+-    static inline void stop_input_hook(void)
+-    {
+-        if (static_key_enabled(&ksu_is_input_hook_enabled))
+-            static_branch_disable(&ksu_is_input_hook_enabled);
+-    }
+-
+ #elif defined(CONFIG_KSU_MANUAL_HOOK)
+     #if defined(CONFIG_KSU_MANUAL_HOOK_AUTO_INITRC_HOOK) && defined(KSU_COMPAT_USE_STATIC_KEY)
+         DEFINE_STATIC_KEY_TRUE(ksu_init_rc_hook);
+@@ -166,6 +145,27 @@ static void stop_execve_hook(void);
+         #endif
+     #endif
+ 
++#elif defined(CONFIG_KSU_SUSFS)
++    DEFINE_STATIC_KEY_TRUE(ksu_is_init_rc_hook_enabled);
++    DEFINE_STATIC_KEY_TRUE(ksu_is_input_hook_enabled);
++
++    // use define to avoid ifdef
++    #define ksu_init_rc_hook_inactive() (!static_branch_likely(&ksu_is_init_rc_hook_enabled))
++    #define ksu_input_hook_inactive() (!static_branch_likely(&ksu_is_input_hook_enabled))
++
++    static void stop_init_rc_hook(void)
++    {
++        if (static_key_enabled(&ksu_is_init_rc_hook_enabled))
++            static_branch_disable(&ksu_is_init_rc_hook_enabled);
++        pr_info("stop init_rc_hook!\n");
++    }
++
++    static inline void stop_input_hook(void)
++    {
++        if (static_key_enabled(&ksu_is_input_hook_enabled))
++            static_branch_disable(&ksu_is_input_hook_enabled);
++    }
++
+ #else
+     #error "Unsupported hook type"
+ #endif
 diff --git a/kernel/tools/kernel_compat.mk b/kernel/tools/kernel_compat.mk
-index d26ab779..be0cefc5 100644
+index 4ad0da5c..df478031 100644
 --- a/kernel/tools/kernel_compat.mk
 +++ b/kernel/tools/kernel_compat.mk
 @@ -40,7 +40,7 @@ ccflags-y += -DKSU_OPTIONAL_SELINUX_CRED
