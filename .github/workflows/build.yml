@@ -49,6 +49,14 @@ jobs:
         run: |
           git fetch origin
           git reset --hard origin/main
+          # 编译产物二进制曾被 git 跟踪且历史版本损坏，workspace 缓存恢复后
+          # make 会误判"最新"直接执行 -> Exec format error，统一删除强制重编
+          rm -f scripts/asn1_compiler scripts/dtc/dtc scripts/extract-cert \
+                scripts/genksyms/genksyms scripts/kconfig/conf \
+                scripts/mod/mk_elfconfig scripts/selinux/genheaders/genheaders \
+                arch/arm64/kernel/asm-offsets.s kernel/bounds.s \
+                scripts/mod/devicetable-offsets.s \
+                arch/arm64/kernel/vdso/vdso.so.dbg kernel/debug/kdb/kdb_cmds
           # 清理缓存恢复的子模块脏状态（detach + patch 修改 + untracked），再同步到 gitlink
           git submodule foreach --recursive 'git reset --hard HEAD; git clean -fdx' 2>/dev/null || true
           git submodule update --init --recursive
