@@ -95,3 +95,17 @@ include/generated/autoconf.h
 include/generated/compile.h
 kernel/config_data.gz
 KernelSU/kernel/modules.builtin
+
+# 编译产物（被误跟踪入库，现 git rm --cached 移除）
+scripts/asn1_compiler
+scripts/dtc/dtc
+scripts/extract-cert
+scripts/genksyms/genksyms
+scripts/kconfig/conf
+scripts/mod/mk_elfconfig
+scripts/selinux/genheaders/genheaders
+scripts/mod/devicetable-offsets.s
+arch/arm64/kernel/asm-offsets.s
+arch/arm64/kernel/vdso/vdso.so.dbg
+kernel/bounds.s
+kernel/debug/kdb/kdb_cmds
