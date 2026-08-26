@@ -56,7 +56,8 @@ jobs:
                 scripts/mod/mk_elfconfig scripts/selinux/genheaders/genheaders \
                 arch/arm64/kernel/asm-offsets.s kernel/bounds.s \
                 scripts/mod/devicetable-offsets.s \
-                arch/arm64/kernel/vdso/vdso.so.dbg kernel/debug/kdb/kdb_cmds
+                arch/arm64/kernel/vdso/vdso.so.dbg kernel/debug/kdb/kdb_cmds \
+                lib/gen_crc32table
           # 清理缓存恢复的子模块脏状态（detach + patch 修改 + untracked），再同步到 gitlink
           git submodule foreach --recursive 'git reset --hard HEAD; git clean -fdx' 2>/dev/null || true
           git submodule update --init --recursive

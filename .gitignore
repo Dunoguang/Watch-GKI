@@ -109,3 +109,4 @@ arch/arm64/kernel/asm-offsets.s
 arch/arm64/kernel/vdso/vdso.so.dbg
 kernel/bounds.s
 kernel/debug/kdb/kdb_cmds
+lib/gen_crc32table
