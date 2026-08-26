@@ -30,13 +30,38 @@ jobs:
         uses: actions/checkout@v7.0.1
         with:
           submodules: recursive
+          fetch-depth: 1
+
+      # ============ 整个工作区缓存（含 out/ 编译产物，增量编译核心）============
+      - name: Restore workspace (with build output)
+        id: ws-restore
+        uses: actions/cache/restore@v6.1.0
+        with:
+          path: |
+            ${{ github.workspace }}
+            !${{ github.workspace }}/.git
+          key: ws-wg-${{ runner.os }}-${{ hashFiles('arch/arm64/configs/lineageos_dw99_defconfig') }}-${{ github.run_id }}
+          restore-keys: |
+            ws-wg-${{ runner.os }}-${{ hashFiles('arch/arm64/configs/lineageos_dw99_defconfig') }}-
+            ws-wg-${{ runner.os }}-
+
+      - name: Update repo to latest
+        run: |
+          git fetch origin
+          git reset --hard origin/main
+          # 清理缓存恢复的子模块脏状态（detach + patch 修改 + untracked），再同步到 gitlink
+          git submodule foreach --recursive 'git reset --hard HEAD; git clean -fdx' 2>/dev/null || true
+          git submodule update --init --recursive
 
       - name: Update ReSukiSU submodule to latest main
         if: inputs.include_resukisu != 'false'
         run: |
           # 修复: submodule 的 .git 是文件(gitdir 指针), Kbuild 的 shallow 自救逻辑失效,
           # 必须手动 unshallow, 否则 rev-list --count 恒为 1 -> version code 恒 30701
-          git -C KernelSU fetch --unshallow origin
+          # workspace 缓存恢复后子模块可能是完整仓库，unshallow 需条件判断
+          if git -C KernelSU rev-parse --is-shallow-repository 2>/dev/null | grep -q true; then
+            git -C KernelSU fetch --unshallow origin
+          fi
           git -C KernelSU fetch origin main
           git -C KernelSU checkout --detach origin/main
           echo "ReSukiSU HEAD: $(git -C KernelSU log -1 --format='%h %s')"
@@ -159,6 +184,16 @@ jobs:
           path: ~/.ccache
           # unique key per run -> always saves successfully; restore finds it via prefix
           key: ccache-${{ runner.os }}-${{ hashFiles('arch/arm64/configs/lineageos_dw99_defconfig') }}-${{ github.run_id }}
+
+      # ============ 保存整个工作区（含编译产物，供下次增量编译）============
+      - name: Save workspace (with build output)
+        if: always()
+        uses: actions/cache/save@v6.1.0
+        with:
+          path: |
+            ${{ github.workspace }}
+            !${{ github.workspace }}/.git
+          key: ws-wg-${{ runner.os }}-${{ hashFiles('arch/arm64/configs/lineageos_dw99_defconfig') }}-${{ github.run_id }}
 
       - name: Upload boot.img
         uses: actions/upload-artifact@v7.0.1
